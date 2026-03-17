@@ -104,6 +104,19 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSave, onClose, init
             Speichern
           </button>
         </div>
+
+        <div className="pt-3 mt-1 border-t border-gray-100">
+          <a
+            href="https://aistudio.google.com/app/apikey"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-semibold transition-all border border-blue-200"
+          >
+            <ExternalLink size={16} />
+            API Key kostenlos holen
+          </a>
+        </div>
+
       </div>
     </div>
   );
@@ -181,7 +194,7 @@ const App: React.FC = () => {
     }
   }, [notebookGoal, selectedPlatform, appConfig]);
 
-  // --- GOOGLE API SERVICES (INTEGRATED) ---
+  // --- GOOGLE API SERVICES (NATIVE FETCH INSTEAD OF SDK) ---
   
   const fetchDynamicConfig = async (currentKey: string) => {
     if (!currentKey) return;
@@ -202,7 +215,8 @@ const App: React.FC = () => {
         }
       `;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentKey}`, {
+      // Nutzt jetzt die offizielle gemini-2.5-flash URL
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -213,16 +227,18 @@ const App: React.FC = () => {
 
       const data = await response.json();
       if (data.error) throw new Error(data.error.message);
+      
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (responseText) {
-        const newConfig = JSON.parse(responseText) as DynamicConfig;
+        // Robuster JSON-Parser, um Markdown ```json auszufiltern
+        const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const newConfig = JSON.parse(cleanText) as DynamicConfig;
         newConfig.lastUpdated = new Date().toLocaleString('de-DE');
         
         setAppConfig(newConfig);
         localStorage.setItem('gemini_dynamic_config', JSON.stringify(newConfig));
         
-        // Reset selections to new first items to prevent undefined states
         setSelectedTool(newConfig.geminiTools[0] || 'Standard');
         const firstGoal = Object.keys(newConfig.notebookGoals)[0];
         if (firstGoal) {
@@ -230,9 +246,9 @@ const App: React.FC = () => {
             setNotebookOption(newConfig.notebookGoals[firstGoal][0]);
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Fehler beim dynamischen Update:", e);
-      alert("Update fehlgeschlagen. Bitte prüfe deinen API Key und deine Verbindung.");
+      alert(`Update fehlgeschlagen:\n${e.message || "Netzwerkfehler"}\n\nBitte prüfe deinen API Key und deine Verbindung.`);
     } finally {
       setIsUpdatingConfig(false);
     }
@@ -267,7 +283,6 @@ const App: React.FC = () => {
 
       const parts: any[] = [{ text: `Nutzerbeschreibung:\n${userInput}` }];
       
-      // Anhängen der hochgeladenen Bilder (nur bei Gemini)
       if (selectedPlatform === AiPlatform.GEMINI && uploadedImages.length > 0) {
         for (const img of uploadedImages) {
           const base64Data = img.base64.split(',')[1];
@@ -280,7 +295,9 @@ const App: React.FC = () => {
         }
       }
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+      const modelName = selectedMode === ModelMode.PRO ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -291,12 +308,12 @@ const App: React.FC = () => {
 
       const data = await response.json();
       if (data.error) throw new Error(data.error.message);
+      
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
       setGeneratedPrompt(responseText || "Es konnte kein Text generiert werden.");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setGeneratedPrompt("Ein Fehler ist aufgetreten. Bitte API Key prüfen.");
+      setGeneratedPrompt(`Ein Fehler ist aufgetreten: ${error.message || "Netzwerkfehler"}\nBitte API Key prüfen.`);
     } finally {
       setIsLoading(false);
     }
@@ -317,7 +334,7 @@ const App: React.FC = () => {
             { inlineData: { data: base64Audio, mimeType: 'audio/webm' } }
         ];
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -327,6 +344,7 @@ const App: React.FC = () => {
 
         const data = await response.json();
         if (data.error) throw new Error(data.error.message);
+        
         const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (responseText) {
@@ -415,8 +433,8 @@ const App: React.FC = () => {
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 3000);
     const url = selectedPlatform === AiPlatform.NOTEBOOK_LM 
-        ? 'https://notebooklm.google.com/' 
-        : 'https://gemini.google.com/app';
+        ? '[https://notebooklm.google.com/](https://notebooklm.google.com/)' 
+        : '[https://gemini.google.com/app](https://gemini.google.com/app)';
     window.open(url, '_blank');
   };
 
@@ -526,7 +544,6 @@ const App: React.FC = () => {
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {selectedPlatform === AiPlatform.GEMINI ? (
-                // DYNAMIC Gemini Tools
                 appConfig.geminiTools.map((tool) => (
                     <button
                         key={tool}
@@ -542,7 +559,6 @@ const App: React.FC = () => {
                     </button>
                 ))
             ) : (
-                // DYNAMIC NotebookLM Goals
                 Object.keys(appConfig.notebookGoals).map((goal) => (
                     <button
                         key={goal}
@@ -568,7 +584,6 @@ const App: React.FC = () => {
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {selectedPlatform === AiPlatform.GEMINI ? (
-                // Gemini Modes (Static, as these relate to the LLM model used)
                 Object.values(ModelMode).map((mode) => {
                     let icon = mode === ModelMode.FAST ? <Zap size={18}/> : mode === ModelMode.THINKING ? <BrainCircuit size={18}/> : <Rocket size={18}/>;
                     return (
@@ -587,7 +602,6 @@ const App: React.FC = () => {
                     );
                 })
             ) : (
-                // DYNAMIC NotebookLM Options
                 (appConfig.notebookGoals[notebookGoal] || []).map((option) => (
                     <button
                         key={option}
