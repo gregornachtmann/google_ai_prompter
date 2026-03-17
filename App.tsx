@@ -203,13 +203,27 @@ const App: React.FC = () => {
       try {
         const parsed = JSON.parse(storedConfig);
         
-        // Deep Merge Logic zur Sicherheit (damit niemals Tools verloren gehen)
-        const mergedNotebookGoals = { ...INITIAL_NOTEBOOK_CONFIG };
+        // Deep Merge Logic zur Sicherheit (damit niemals Basis-Tools verloren gehen)
+        const mergedNotebookGoals = JSON.parse(JSON.stringify(INITIAL_NOTEBOOK_CONFIG));
         if (parsed.notebookGoals) {
-           Object.keys(parsed.notebookGoals).forEach(key => {
-             // Wenn das Tool auch von der KI gefunden wurde, nehmen wir die Optionen dazu
-             if (!mergedNotebookGoals[key]) mergedNotebookGoals[key] = {};
-             mergedNotebookGoals[key] = { ...mergedNotebookGoals[key], ...parsed.notebookGoals[key] };
+           Object.keys(parsed.notebookGoals).forEach(goalKey => {
+             if (goalKey.toLowerCase().includes("deep research")) return; 
+             
+             if (!mergedNotebookGoals[goalKey]) {
+                 mergedNotebookGoals[goalKey] = parsed.notebookGoals[goalKey];
+             } else {
+                 const newOptions = parsed.notebookGoals[goalKey];
+                 if (newOptions && typeof newOptions === 'object') {
+                     Object.keys(newOptions).forEach(optionCategory => {
+                         if (!mergedNotebookGoals[goalKey][optionCategory]) {
+                             mergedNotebookGoals[goalKey][optionCategory] = newOptions[optionCategory];
+                         } else if (Array.isArray(newOptions[optionCategory])) {
+                             const combined = [...mergedNotebookGoals[goalKey][optionCategory], ...newOptions[optionCategory]];
+                             mergedNotebookGoals[goalKey][optionCategory] = Array.from(new Set(combined));
+                         }
+                     });
+                 }
+             }
            });
         }
         
@@ -267,11 +281,15 @@ const App: React.FC = () => {
       const prompt = `
         Du bist der System-Updater für einen Prompt-Generator. Recherchiere AKTUELL IM INTERNET die allerneuesten, offiziellen Funktionen von Google Gemini (NUR PRO Abo) und NotebookLM.
         
-        STRENGE REGELN FÜR DEINE RECHERCHE UND ANTWORT (HALTE DICH ZWINGEND DARAN):
+        STRENGE REGELN FÜR DEINE RECHERCHE UND ANTWORT:
         1. SCHLIESSE Ultra-Features komplett aus. Liste NUR Funktionen, die für "Google AI Pro" Abonnenten verfügbar sind.
-        2. STRIKTE TRENNUNG: Mische niemals Gemini-Tools mit NotebookLM-Tools! (z.B. gehört "Deep Research" AUSSCHLIESSLICH zu Gemini LLM und hat bei NotebookLM nichts zu suchen).
-        3. FÜR GEMINI: Du MUSST ZWINGEND exakt diese Basis-Tools beibehalten: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes Tool hinzugekommen ist.
-        4. FÜR NOTEBOOKLM: Du MUSST ZWINGEND exakt diese 9 Hauptkategorien beibehalten: ${currentNotebookCategories}. Erfinde keine Kategorien, die eigentlich zu Gemini gehören! Füge eine 10. Kategorie NUR hinzu, wenn sie ausdrücklich auf der offiziellen NotebookLM Seite als "NotebookLM Studio" Tool deklariert ist.
+        2. STRIKTE TRENNUNG: Mische niemals Gemini-Tools mit NotebookLM-Tools! (z.B. gehört "Deep Research" AUSSCHLIESSLICH zu Gemini LLM).
+        3. FÜR GEMINI: Behalte exakt diese Basis-Tools bei: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes Tool hinzugekommen ist.
+        4. FÜR NOTEBOOKLM: 
+           - Behalte zwingend diese Hauptkategorien bei: ${currentNotebookCategories}.
+           - Ordne Anpassungsoptionen (z.B. Format, Länge, Ausrichtung) AUSSCHLIESSLICH den Tools zu, die diese Optionen auch wirklich bieten!
+           - Wenn ein Tool keine Anpassungsoptionen hat (wie die Mindmap), erfinde keine und lass das Optionen-Objekt leer.
+           - Füge eine komplett neue Kategorie NUR hinzu, wenn sie ausdrücklich als neues "NotebookLM Studio" Tool deklariert ist.
         
         Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Verwende keine Markdown-Formatierungen.
         {
@@ -281,7 +299,8 @@ const App: React.FC = () => {
             "notebookGoals": {
                 "Titel der Kategorie (z.B. Audio-Zusammenfassung)": {
                   "Name der Einstellungskategorie (z.B. Format)": ["Option 1", "Option 2"]
-                }
+                },
+                "Titel eines Tools ohne Optionen (z.B. Mindmap)": {}
             },
             "rules": "Ein Fließtext mit den tagesaktuellen Google Prompting-Regeln."
         }
@@ -305,16 +324,34 @@ const App: React.FC = () => {
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         const newConfig = JSON.parse(cleanText) as DynamicConfig;
         
-        // --- DAS SCHUTZGITTER (Merge Logic mit Bereinigung) ---
-        const mergedNotebookGoals = { ...INITIAL_NOTEBOOK_CONFIG };
+        // --- DAS INTELLIGENTE SCHUTZGITTER (Smart Merge Logic) ---
+        // Wir starten IMMER mit einer frischen Kopie der Basis-Konfiguration, um nichts zu verlieren.
+        const mergedNotebookGoals = JSON.parse(JSON.stringify(INITIAL_NOTEBOOK_CONFIG));
+        
         if (newConfig.notebookGoals) {
-           Object.keys(newConfig.notebookGoals).forEach(key => {
-             // Letzter Check: Wenn die KI meint, "Deep Research" bei NotebookLM einzufügen, ignorieren wir es hart.
-             if (key.toLowerCase().includes("deep research")) return; 
+           Object.keys(newConfig.notebookGoals).forEach(goalKey => {
+             // Letzter Check: Gemini-Tools rigoros aus NotebookLM heraushalten
+             if (goalKey.toLowerCase().includes("deep research")) return; 
 
-             if (!mergedNotebookGoals[key]) mergedNotebookGoals[key] = {};
-             // Fügt neue Optionen zu bestehenden oder erstellt ganz neue Kategorien
-             mergedNotebookGoals[key] = { ...mergedNotebookGoals[key], ...newConfig.notebookGoals[key] };
+             if (!mergedNotebookGoals[goalKey]) {
+                 // Ein komplett neues Studio Tool wurde gefunden!
+                 mergedNotebookGoals[goalKey] = newConfig.notebookGoals[goalKey];
+             } else {
+                 // Das Tool existiert bereits: Wir fügen nur NEUE Optionen hinzu, überschreiben aber niemals die Basis!
+                 const newOptions = newConfig.notebookGoals[goalKey];
+                 if (newOptions && typeof newOptions === 'object') {
+                     Object.keys(newOptions).forEach(optionCategory => {
+                         if (!mergedNotebookGoals[goalKey][optionCategory]) {
+                             // Eine neue Einstellungskategorie (z.B. "Farbe") wurde gefunden
+                             mergedNotebookGoals[goalKey][optionCategory] = newOptions[optionCategory];
+                         } else if (Array.isArray(newOptions[optionCategory])) {
+                             // Die Kategorie existiert, wir führen die Arrays zusammen und entfernen Duplikate
+                             const combined = [...mergedNotebookGoals[goalKey][optionCategory], ...newOptions[optionCategory]];
+                             mergedNotebookGoals[goalKey][optionCategory] = Array.from(new Set(combined));
+                         }
+                     });
+                 }
+             }
            });
         }
         
@@ -322,7 +359,7 @@ const App: React.FC = () => {
         if (newConfig.geminiTools && Array.isArray(newConfig.geminiTools)) {
             newConfig.geminiTools.forEach((t: GeminiTool) => {
                if (!mergedGeminiTools.find(bt => bt.title.toLowerCase() === t.title.toLowerCase())) {
-                   mergedGeminiTools.push(t); // Nur anhängen, wenn es ein komplett neues Tool ist
+                   mergedGeminiTools.push(t); // Neues Gemini-Tool anhängen
                }
             });
         }
