@@ -250,6 +250,7 @@ const App: React.FC = () => {
         Du bist der System-Updater für einen Prompt-Generator. Recherchiere AKTUELL IM INTERNET die allerneuesten, offiziellen Funktionen 
         von Google Gemini Advanced/Pro und Google NotebookLM (inkl. neuer, experimenteller Studio-Features).
         
+        WICHTIG: Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Verwende keine Formatierungen, nur das reine JSON.
         Gib eine strikte JSON-Antwort zurück, exakt in dieser dynamischen Struktur:
         {
             "geminiTools": ["Aktuelles Tool 1", "Aktuelles Tool 2"],
@@ -272,8 +273,7 @@ const App: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          tools: [{ google_search: {} }], // <-- Hier ist der Schlüssel: Live-Internetsuche aktiviert!
-          generationConfig: { responseMimeType: "application/json" }
+          tools: [{ google_search: {} }] // Live-Suche bleibt aktiv, aber der inkompatible JSON-MimeType-Zwang wurde entfernt.
         })
       });
 
