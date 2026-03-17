@@ -267,10 +267,11 @@ const App: React.FC = () => {
       const prompt = `
         Du bist der System-Updater für einen Prompt-Generator. Recherchiere AKTUELL IM INTERNET die allerneuesten, offiziellen Funktionen von Google Gemini (NUR PRO Abo) und NotebookLM.
         
-        WICHTIGE REGELN FÜR DEINE RECHERCHE UND ANTWORT:
+        STRENGE REGELN FÜR DEINE RECHERCHE UND ANTWORT (HALTE DICH ZWINGEND DARAN):
         1. SCHLIESSE Ultra-Features komplett aus. Liste NUR Funktionen, die für "Google AI Pro" Abonnenten verfügbar sind.
-        2. FÜR GEMINI: Du MUSST ZWINGEND exakt diese Basis-Tools beibehalten: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes Tool (wie z.B. eine neue Art von Studio-Werkzeug) hinzugekommen ist.
-        3. FÜR NOTEBOOKLM: Du MUSST ZWINGEND exakt diese 9 Hauptkategorien beibehalten: ${currentNotebookCategories}. Recherchiere lediglich, ob es neue Unterpunkte für diese Kategorien gibt oder ob eine 10. Studio-Kategorie veröffentlicht wurde.
+        2. STRIKTE TRENNUNG: Mische niemals Gemini-Tools mit NotebookLM-Tools! (z.B. gehört "Deep Research" AUSSCHLIESSLICH zu Gemini LLM und hat bei NotebookLM nichts zu suchen).
+        3. FÜR GEMINI: Du MUSST ZWINGEND exakt diese Basis-Tools beibehalten: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes Tool hinzugekommen ist.
+        4. FÜR NOTEBOOKLM: Du MUSST ZWINGEND exakt diese 9 Hauptkategorien beibehalten: ${currentNotebookCategories}. Erfinde keine Kategorien, die eigentlich zu Gemini gehören! Füge eine 10. Kategorie NUR hinzu, wenn sie ausdrücklich auf der offiziellen NotebookLM Seite als "NotebookLM Studio" Tool deklariert ist.
         
         Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Verwende keine Markdown-Formatierungen.
         {
@@ -304,10 +305,13 @@ const App: React.FC = () => {
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         const newConfig = JSON.parse(cleanText) as DynamicConfig;
         
-        // --- DAS SCHUTZGITTER (Merge Logic) ---
+        // --- DAS SCHUTZGITTER (Merge Logic mit Bereinigung) ---
         const mergedNotebookGoals = { ...INITIAL_NOTEBOOK_CONFIG };
         if (newConfig.notebookGoals) {
            Object.keys(newConfig.notebookGoals).forEach(key => {
+             // Letzter Check: Wenn die KI meint, "Deep Research" bei NotebookLM einzufügen, ignorieren wir es hart.
+             if (key.toLowerCase().includes("deep research")) return; 
+
              if (!mergedNotebookGoals[key]) mergedNotebookGoals[key] = {};
              // Fügt neue Optionen zu bestehenden oder erstellt ganz neue Kategorien
              mergedNotebookGoals[key] = { ...mergedNotebookGoals[key], ...newConfig.notebookGoals[key] };
