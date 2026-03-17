@@ -4,7 +4,7 @@ import {
   LayoutTemplate, Zap, BrainCircuit, Rocket, ExternalLink, Check, Key, Loader2,
   Headphones, FileText, Layers, GraduationCap, Network, PieChart, MonitorPlay, 
   Table, RefreshCw, Bot, Terminal, Globe, ShieldCheck, Box, Database, MessageSquare,
-  Cpu, LayoutDashboard, History
+  Cpu, LayoutDashboard, History, Music
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -15,7 +15,7 @@ export enum AiPlatform {
 
 export enum ModelMode {
   FAST = 'Fast',
-  THINKING = 'Thinking',
+  THINKING = 'Thinking Mode',
   PRO = 'Pro'
 }
 
@@ -38,56 +38,48 @@ export interface DynamicConfig {
   lastUpdated?: string;
 }
 
-// --- INITIAL DEFAULTS (Real-World Google AI Pro Features) ---
+// --- INITIAL DEFAULTS (Strictly based on User Input for Google AI Pro) ---
 const INITIAL_GEMINI_TOOLS: GeminiTool[] = [
-  { title: "Standardchat", description: "Der normale Konversationsmodus für allgemeine Fragen, Textentwürfe und Brainstorming." },
-  { title: "Deep Research", description: "Tiefgehende, mehrstufige Internetrecherche, die umfassende Berichte mit Quellenangaben erstellt." },
-  { title: "Canvas", description: "Ein geteilter Arbeitsbereich zum gemeinsamen Schreiben, Überarbeiten und Formatieren von Texten oder Code." },
-  { title: "Bild-Erstellung (Imagen 3)", description: "Erstelle fotorealistische Bilder, Illustrationen und Grafiken aus Textbeschreibungen." },
-  { title: "Datenanalyse", description: "Lade Tabellen (CSV, Excel) hoch, um Diagramme zu erstellen und komplexe Daten auszuwerten." },
-  { title: "Workspace Integration", description: "Greife über @ direkt auf deine Google Docs, Drive-Dateien oder Gmail-Nachrichten zu." },
-  { title: "Gems", description: "Erstelle oder nutze spezialisierte KI-Experten mit eigenen Anweisungen (z.B. einen 'Schreib-Coach')." },
-  { title: "Gemini Live", description: "Freifließende Sprachkonversation in Echtzeit (ideal zur Vorbereitung auf mündliche Gespräche)." }
+  { title: "Bild erstellen", description: "Erstelle hochauflösende Bilder mit dem neuesten Google Nano Banana 2 Modell." },
+  { title: "Canvas", description: "Ein geteilter Arbeitsbereich zum gemeinsamen Schreiben, Überarbeiten und Formatieren von langen Texten oder Code." },
+  { title: "Deep Research", description: "Tiefgehende Internetrecherche, die mehrere Quellen kombiniert und umfassende Berichte erstellt." },
+  { title: "Video erstellen", description: "Generiere kurze, eindrucksvolle Videoclips basierend auf deinen Textbeschreibungen (Veo)." },
+  { title: "Musik erstellen", description: "Erstelle maßgeschneiderte Audio-Tracks, Jingles oder Hintergrundmusik." },
+  { title: "Lernhilfe", description: "Dein persönlicher Tutor zur Vorbereitung auf Prüfungen, zum Erklären von Konzepten oder Vokabeln." }
 ];
 
 const INITIAL_NOTEBOOK_CONFIG: Record<string, Record<string, string[]>> = {
-  'Audioübersichten (Podcast-ähnliche Diskussionen)': {
-    "Fokus & Thema": ["Allgemeine Zusammenfassung", "Detaillierte Analyse", "Kritische Diskussion", "Für Anfänger erklärt"],
-    "Länge": ["Kurz (Elevator Pitch)", "Standard", "Ausführlich"]
+  'Audio-Zusammenfassung': {
+    "Format": ["Detaillierte Analyse", "Zusammenfassung", "kritische Bewertung", "Diskussion"],
+    "Länge": ["Kurz", "Standard"]
   },
-  'Videoübersichten (visuelle Videos mit KI-Narration)': {
-    "Visueller Stil": ["Cinematic", "Erklärvideo / Didaktisch", "Business / Corporate", "Social Media Short"],
-    "Länge": ["Unter 1 Minute", "1-3 Minuten", "Detailliert (5+ Min)"]
+  'Präsentation': {
+    "Format": ["Detaillierte Präsentation", "Folien für Vortragende"],
+    "Länge": ["Kurz", "Standard"]
   },
-  'Präsentationen (Slide Decks)': {
-    "Art der Präsentation": ["Pitch Deck", "Lehr-Präsentation", "Status-Update", "Vision / Strategie"],
-    "Folien-Anzahl": ["Ca. 5 Folien", "Ca. 10 Folien", "Umfassend (20+ Folien)"]
+  'Videoübersicht': {
+    "Format": ["Erklärvideo", "Zusammenfassung"],
+    "Visueller Stil": ["automatische Auswahl", "Benutzer definiert", "klassisch Whiteboard", "Kawaii", "Anime", "Wasserfarben Retro-Druck", "traditionell", "Papierkunst"]
   },
-  'Infografiken (visuelle Zusammenfassungen)': {
-    "Sprache auswählen": ["Deutsch", "Englisch", "Spanisch", "Französisch"],
-    "Ausrichtung auswählen": ["Querformat", "Hochformat", "Quadrat"],
-    "Visuellen Stil auswählen": ["Automatische Auswahl", "Sketchnote", "Kawaii", "Professionell", "Wissenschaft", "Anime"],
-    "Detaillierungsgrad": ["Kurzgefasst", "Standard", "Detailliert (BETA)"]
+  'Mindmap': {
+    // Hat absichtlich keine gesonderten Optionen
   },
-  'Mind Maps (interaktive visuelle Karten)': {
-    "Struktur": ["Kreativ / Brainstorming", "Logisch / Hierarchisch", "Ursache-Wirkung"],
-    "Komplexität": ["High Level (Grob)", "Standard", "Hoch Komplex (Verschachtelt)"]
+  'Berichte': {
+    "Format": ["Eigenen Bericht erstellen", "Überblick", "Lernplan", "Blog Post"]
   },
-  'Berichte (maßgeschneiderte Dokumente)': {
-    "Format": ["Executive Summary", "Forschungsbericht", "Fallstudie", "Thesenpapier"],
-    "Detailtiefe": ["1 Seite (Kompakt)", "2-3 Seiten", "Umfassend"]
+  'Karteikarten': {
+    "Schwierigkeitsgrad": ["einfach", "mittel", "schwierig"]
   },
-  'Lernkarten und Quizze': {
-    "Typ": ["Lernkarten (Vokabel-Stil)", "Multiple Choice", "Offene Fragen", "True/False"],
-    "Schwierigkeitsgrad": ["Grundlagen", "Fortgeschritten", "Experte (Transferfragen)"]
+  'Quiz': {
+    "Schwierigkeitsgrad": ["einfach", "mittel", "schwierig"]
   },
-  'Datentabellen': {
-    "Tabellenart": ["Rohdaten-Extraktion", "Vergleichstabelle", "Zusammenfassung (Aggregiert)"],
-    "Umfang": ["Top 5", "Top 10", "Alle relevanten Daten"]
+  'Infografik': {
+    "Ausrichtung": ["Querformat", "Hochformat", "Quadrat"],
+    "Visueller Stil": ["Automatische Auswahl", "Sketch Note", "Kawaii", "Professionell", "Wissenschaft", "Anime", "Tonfigur", "Editorial", "Anleitung", "Bento", "Grid", "Ziegelsteine"],
+    "Detaillierungsgrad": ["kurz gefasst", "Standard", "detailliert(Beta)"]
   },
-  'Lernführer (personalisierter Tutor)': {
-    "Format": ["Schritt-für-Schritt-Anleitung", "Sokratischer Dialog", "FAQ-Katalog"],
-    "Zielgruppe / Niveau": ["Schüler", "Student", "Berufseinsteiger", "Profi"]
+  'Datentabelle': {
+    "Sprache": ["Deutsch", "Englisch", "Spanisch", "Französisch"]
   }
 };
 
@@ -211,22 +203,35 @@ const App: React.FC = () => {
       try {
         const parsed = JSON.parse(storedConfig);
         
-        // Sicherheits-Check: Falls die KI beim Update versehentlich Kategorien gelöscht hat, 
-        // erzwingen wir hier den Standard zurück.
-        const parsedGoalCount = Object.keys(parsed.notebookGoals || {}).length;
-        if (parsedGoalCount < 8) {
-           console.warn("Gespeicherte Konfiguration war unvollständig. Setze auf Standard zurück.");
-           setAppConfig({
-              ...parsed,
-              notebookGoals: INITIAL_NOTEBOOK_CONFIG
+        // Deep Merge Logic zur Sicherheit (damit niemals Tools verloren gehen)
+        const mergedNotebookGoals = { ...INITIAL_NOTEBOOK_CONFIG };
+        if (parsed.notebookGoals) {
+           Object.keys(parsed.notebookGoals).forEach(key => {
+             // Wenn das Tool auch von der KI gefunden wurde, nehmen wir die Optionen dazu
+             if (!mergedNotebookGoals[key]) mergedNotebookGoals[key] = {};
+             mergedNotebookGoals[key] = { ...mergedNotebookGoals[key], ...parsed.notebookGoals[key] };
            });
-           setNotebookGoal(Object.keys(INITIAL_NOTEBOOK_CONFIG)[0]);
-        } else {
-           setAppConfig(parsed);
-           setSelectedTool(parsed.geminiTools[0]?.title || INITIAL_GEMINI_TOOLS[0].title);
-           const firstGoal = Object.keys(parsed.notebookGoals)[0];
-           if (firstGoal) setNotebookGoal(firstGoal);
         }
+        
+        const mergedGeminiTools = [...INITIAL_GEMINI_TOOLS];
+        if (parsed.geminiTools && Array.isArray(parsed.geminiTools)) {
+            parsed.geminiTools.forEach((t: GeminiTool) => {
+               if (!mergedGeminiTools.find(bt => bt.title.toLowerCase() === t.title.toLowerCase())) {
+                   mergedGeminiTools.push(t);
+               }
+            });
+        }
+
+        const finalConfig = {
+            ...parsed,
+            geminiTools: mergedGeminiTools,
+            notebookGoals: mergedNotebookGoals
+        };
+
+        setAppConfig(finalConfig);
+        setSelectedTool(finalConfig.geminiTools[0]?.title || INITIAL_GEMINI_TOOLS[0].title);
+        const firstGoal = Object.keys(finalConfig.notebookGoals)[0];
+        if (firstGoal) setNotebookGoal(firstGoal);
       } catch (e) {
         console.error("Config Load Error", e);
       }
@@ -237,13 +242,13 @@ const App: React.FC = () => {
   useEffect(() => {
     if (selectedPlatform === AiPlatform.NOTEBOOK_LM) {
       const currentGoalConfig = appConfig.notebookGoals[notebookGoal];
+      const newSelections: Record<string, string> = {};
       if (currentGoalConfig) {
-        const newSelections: Record<string, string> = {};
         Object.keys(currentGoalConfig).forEach(category => {
           newSelections[category] = currentGoalConfig[category][0] || "";
         });
-        setNotebookSelections(newSelections);
       }
+      setNotebookSelections(newSelections);
     }
   }, [notebookGoal, selectedPlatform, appConfig]);
 
@@ -251,7 +256,7 @@ const App: React.FC = () => {
     setNotebookSelections(prev => ({ ...prev, [category]: value }));
   };
 
-  // --- API LOGIC ---
+  // --- API LOGIC (UPDATE BUTTON) ---
   const fetchDynamicConfig = async (currentKey: string) => {
     if (!currentKey) return;
     setIsUpdatingConfig(true);
@@ -263,18 +268,18 @@ const App: React.FC = () => {
         Du bist der System-Updater für einen Prompt-Generator. Recherchiere AKTUELL IM INTERNET die allerneuesten, offiziellen Funktionen von Google Gemini (NUR PRO Abo) und NotebookLM.
         
         WICHTIGE REGELN FÜR DEINE RECHERCHE UND ANTWORT:
-        1. SCHLIESSE Ultra-Features komplett aus. Liste NUR Funktionen, die für "Google AI Pro" Abonnenten im Web-Interface verfügbar sind.
-        2. FÜR GEMINI: Du MUSST ZWINGEND exakt diese Basis-Tools beibehalten: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes, klickbares Tool im UI hinzugekommen ist. KEINE abstrakten Backend-Features wie "1 Million Tokens".
-        3. FÜR NOTEBOOKLM: Du MUSST ZWINGEND exakt diese 9 Hauptkategorien beibehalten: ${currentNotebookCategories}. Du darfst KEINE einzige davon weglassen! Recherchiere lediglich, ob es neue Unterpunkte für diese 9 Kategorien gibt (z.B. neue visuelle Stile) oder ob eine 10. Kategorie hinzugekommen ist.
+        1. SCHLIESSE Ultra-Features komplett aus. Liste NUR Funktionen, die für "Google AI Pro" Abonnenten verfügbar sind.
+        2. FÜR GEMINI: Du MUSST ZWINGEND exakt diese Basis-Tools beibehalten: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes Tool (wie z.B. eine neue Art von Studio-Werkzeug) hinzugekommen ist.
+        3. FÜR NOTEBOOKLM: Du MUSST ZWINGEND exakt diese 9 Hauptkategorien beibehalten: ${currentNotebookCategories}. Recherchiere lediglich, ob es neue Unterpunkte für diese Kategorien gibt oder ob eine 10. Studio-Kategorie veröffentlicht wurde.
         
-        Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Verwende keine Formatierungen, nur reines JSON:
+        Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Verwende keine Markdown-Formatierungen.
         {
             "geminiTools": [
                 { "title": "Name des klickbaren Tools", "description": "Ein kurzer, prägnanter Erklärsatz dazu" }
             ],
             "notebookGoals": {
-                "Titel der Kategorie (Muss alle 9 enthalten!)": {
-                  "Name der Einstellungskategorie (z.B. Ausrichtung)": ["Option 1", "Option 2"]
+                "Titel der Kategorie (z.B. Audio-Zusammenfassung)": {
+                  "Name der Einstellungskategorie (z.B. Format)": ["Option 1", "Option 2"]
                 }
             },
             "rules": "Ein Fließtext mit den tagesaktuellen Google Prompting-Regeln."
@@ -299,27 +304,37 @@ const App: React.FC = () => {
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         const newConfig = JSON.parse(cleanText) as DynamicConfig;
         
-        // Sicherheits-Netz NotebookLM: Wenn die KI Kategorien weggelassen hat, verschmelzen wir das Update mit dem Original.
-        const mergedGoals = { ...INITIAL_NOTEBOOK_CONFIG, ...(newConfig.notebookGoals || {}) };
-        newConfig.notebookGoals = mergedGoals;
+        // --- DAS SCHUTZGITTER (Merge Logic) ---
+        const mergedNotebookGoals = { ...INITIAL_NOTEBOOK_CONFIG };
+        if (newConfig.notebookGoals) {
+           Object.keys(newConfig.notebookGoals).forEach(key => {
+             if (!mergedNotebookGoals[key]) mergedNotebookGoals[key] = {};
+             // Fügt neue Optionen zu bestehenden oder erstellt ganz neue Kategorien
+             mergedNotebookGoals[key] = { ...mergedNotebookGoals[key], ...newConfig.notebookGoals[key] };
+           });
+        }
         
-        // Sicherheits-Netz Gemini Tools: Basis-Tools zwingend beibehalten, neue hinzufügen
-        const newTools = newConfig.geminiTools || [];
-        const mergedTools = [...INITIAL_GEMINI_TOOLS];
-        newTools.forEach(newTool => {
-          if (!mergedTools.find(t => t.title.toLowerCase() === newTool.title.toLowerCase())) {
-            mergedTools.push(newTool);
-          }
-        });
-        newConfig.geminiTools = mergedTools;
+        const mergedGeminiTools = [...INITIAL_GEMINI_TOOLS];
+        if (newConfig.geminiTools && Array.isArray(newConfig.geminiTools)) {
+            newConfig.geminiTools.forEach((t: GeminiTool) => {
+               if (!mergedGeminiTools.find(bt => bt.title.toLowerCase() === t.title.toLowerCase())) {
+                   mergedGeminiTools.push(t); // Nur anhängen, wenn es ein komplett neues Tool ist
+               }
+            });
+        }
         
-        newConfig.lastUpdated = new Date().toLocaleString('de-DE');
+        const finalConfig = {
+            rules: newConfig.rules || INITIAL_RULES,
+            geminiTools: mergedGeminiTools,
+            notebookGoals: mergedNotebookGoals,
+            lastUpdated: new Date().toLocaleString('de-DE')
+        };
         
-        setAppConfig(newConfig);
-        localStorage.setItem('gemini_dynamic_config', JSON.stringify(newConfig));
+        setAppConfig(finalConfig);
+        localStorage.setItem('gemini_dynamic_config', JSON.stringify(finalConfig));
         
-        setSelectedTool(newConfig.geminiTools[0]?.title || 'Standardchat');
-        const firstGoal = Object.keys(newConfig.notebookGoals)[0];
+        setSelectedTool(finalConfig.geminiTools[0]?.title || INITIAL_GEMINI_TOOLS[0].title);
+        const firstGoal = Object.keys(finalConfig.notebookGoals)[0];
         if (firstGoal) setNotebookGoal(firstGoal);
       }
     } catch (e: any) {
@@ -356,8 +371,7 @@ const App: React.FC = () => {
           .join('\n        ');
 
         sysMsg = `Du bist ein Experte für NotebookLM. Erstelle eine perfekte Instruktion oder ein Prompt-Template für das Ziel '${notebookGoal}'.
-        Der Nutzer hat folgende feingranulare Einstellungen für das Studio-Tool gewählt:
-        ${settingsString}
+        ${settingsString ? `Der Nutzer hat folgende Einstellungen für das Studio-Tool gewählt:\n        ${settingsString}` : ''}
 
         WICHTIG! Wende zwingend diese offiziellen Regeln an:
         ${appConfig.rules}
@@ -373,6 +387,7 @@ const App: React.FC = () => {
         }
       }
 
+      // Gemini 2.5 Flash ist superschnell, 2.5 Pro für komplexere Tasks (oder "Thinking" Mode Simulation)
       const modelName = selectedMode === ModelMode.PRO ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
@@ -503,23 +518,24 @@ const App: React.FC = () => {
   // --- DYNAMIC ICON HELPERS ---
   const getDynamicIcon = (name: string) => {
     const lower = name.toLowerCase();
-    if (lower.includes('video') || lower.includes('veo')) return <Video size={18} />;
+    if (lower.includes('video')) return <Video size={18} />;
     if (lower.includes('bild') || lower.includes('imagen')) return <ImageIcon size={18} />;
     if (lower.includes('research') || lower.includes('suche')) return <Search size={18} />;
     if (lower.includes('canvas') || lower.includes('layout')) return <LayoutTemplate size={18} />;
-    if (lower.includes('lern') || lower.includes('kartei') || lower.includes('tutor')) return <Layers size={18} />;
+    if (lower.includes('lern') || lower.includes('kartei')) return <Layers size={18} />;
     if (lower.includes('audio') || lower.includes('sprach') || lower.includes('live')) return <Headphones size={18} />;
     if (lower.includes('bericht') || lower.includes('dokument')) return <FileText size={18} />;
     if (lower.includes('quiz') || lower.includes('frage')) return <GraduationCap size={18} />;
     if (lower.includes('mindmap') || lower.includes('netz') || lower.includes('map')) return <Network size={18} />;
     if (lower.includes('tabelle') || lower.includes('daten')) return <Database size={18} />;
     if (lower.includes('präsent') || lower.includes('slide')) return <MonitorPlay size={18} />;
-    if (lower.includes('code') || lower.includes('funktion')) return <Terminal size={18} />;
-    if (lower.includes('workspace') || lower.includes('integration') || lower.includes('drive')) return <Globe size={18} />;
+    if (lower.includes('musik') || lower.includes('music')) return <Music size={18} />;
+    if (lower.includes('workspace') || lower.includes('integration')) return <Globe size={18} />;
     if (lower.includes('gems') || lower.includes('custom')) return <Box size={18} />;
-    if (lower.includes('chat')) return <MessageSquare size={18} />;
     return <Sparkles size={18} />;
   };
+
+  const currentNotebookOptions = appConfig.notebookGoals[notebookGoal] || {};
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 font-sans text-slate-800 relative">
@@ -686,28 +702,34 @@ const App: React.FC = () => {
              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
               2. STUDIO-EINSTELLUNGEN FÜR: <span className="text-green-600">{notebookGoal}</span>
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(appConfig.notebookGoals[notebookGoal] || {}).map(([categoryName, optionsArray]) => (
-                 <div key={categoryName} className="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">{categoryName}</h3>
-                    <div className="flex flex-wrap gap-2">
-                       {optionsArray.map(option => (
-                           <button
-                             key={option}
-                             onClick={() => handleNotebookSelectionChange(categoryName, option)}
-                             className={`px-4 py-2.5 rounded-xl border transition-all text-sm font-medium text-left shadow-sm hover:shadow-md ${
-                             notebookSelections[categoryName] === option
-                                 ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                                 : 'bg-white border-gray-200 text-gray-600 hover:border-emerald-200 hover:bg-emerald-50/50'
-                             }`}
-                           >
-                             {option}
-                           </button>
-                       ))}
-                    </div>
-                 </div>
-              ))}
-            </div>
+            {Object.keys(currentNotebookOptions).length === 0 ? (
+                <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
+                    Für dieses Tool sind in NotebookLM keine weiteren Voreinstellungen erforderlich.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Object.entries(currentNotebookOptions).map(([categoryName, optionsArray]) => (
+                     <div key={categoryName} className="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3">{categoryName}</h3>
+                        <div className="flex flex-wrap gap-2">
+                           {optionsArray.map(option => (
+                               <button
+                                 key={option}
+                                 onClick={() => handleNotebookSelectionChange(categoryName, option)}
+                                 className={`px-4 py-2.5 rounded-xl border transition-all text-sm font-medium text-left shadow-sm hover:shadow-md ${
+                                 notebookSelections[categoryName] === option
+                                     ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                                     : 'bg-white border-gray-200 text-gray-600 hover:border-emerald-200 hover:bg-emerald-50/50'
+                                 }`}
+                               >
+                                 {option}
+                               </button>
+                           ))}
+                        </div>
+                     </div>
+                  ))}
+                </div>
+            )}
           </div>
         )}
 
