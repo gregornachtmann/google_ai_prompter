@@ -3,7 +3,8 @@ import {
   Mic, MicOff, Copy, Sparkles, Image as ImageIcon, X, Video, Search, BookOpen, 
   LayoutTemplate, Zap, BrainCircuit, Rocket, ExternalLink, Check, Key, Loader2,
   Headphones, FileText, Layers, GraduationCap, Network, PieChart, MonitorPlay, 
-  Table, RefreshCw, Bot, Terminal, Globe, ShieldCheck, Box, Database, MessageSquare
+  Table, RefreshCw, Bot, Terminal, Globe, ShieldCheck, Box, Database, MessageSquare,
+  Cpu, LayoutDashboard, History
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -25,70 +26,68 @@ export interface UploadedImage {
   mimeType: string;
 }
 
-export interface NotebookConfigOption {
-  formats: string[];
-  lengths: string[];
+export interface GeminiTool {
+  title: string;
+  description: string;
 }
 
 export interface DynamicConfig {
-  geminiTools: string[];
-  notebookGoals: Record<string, NotebookConfigOption>;
+  geminiTools: GeminiTool[];
+  notebookGoals: Record<string, Record<string, string[]>>;
   rules: string;
   lastUpdated?: string;
 }
 
-// --- INITIAL DEFAULTS (Based on User Screenshots) ---
-const INITIAL_GEMINI_TOOLS = [
-  'Funktionsaufrufe (Function Calling)',
-  'Multimodale Eingabe (Text, Bild, Audio)',
-  'Erweiterte Kontextfenster',
-  'Grounding mit Google Suche',
-  'Grounding mit Google Dokumenten',
-  'Code-Generierung, -Ausführung',
-  'Datenkonnektoren für die Cloud',
-  'Bildanalyse und Bildunterschriften',
-  'Live-Audio-Verarbeitung',
-  'Anpassung und Feinabstimmung',
-  'Sicherheits-APIs und Inhaltsfilterung',
-  'Agenten-Erstellung mit LangChain'
+// --- INITIAL DEFAULTS (Real-World Google AI Pro Features) ---
+const INITIAL_GEMINI_TOOLS: GeminiTool[] = [
+  { title: "Standardchat", description: "Der normale Konversationsmodus für allgemeine Fragen, Textentwürfe und Brainstorming." },
+  { title: "Deep Research", description: "Tiefgehende, mehrstufige Internetrecherche, die umfassende Berichte mit Quellenangaben erstellt." },
+  { title: "Canvas", description: "Ein geteilter Arbeitsbereich zum gemeinsamen Schreiben, Überarbeiten und Formatieren von Texten oder Code." },
+  { title: "Bild-Erstellung (Imagen 3)", description: "Erstelle fotorealistische Bilder, Illustrationen und Grafiken aus Textbeschreibungen." },
+  { title: "Datenanalyse", description: "Lade Tabellen (CSV, Excel) hoch, um Diagramme zu erstellen und komplexe Daten auszuwerten." },
+  { title: "Workspace Integration", description: "Greife über @ direkt auf deine Google Docs, Drive-Dateien oder Gmail-Nachrichten zu." },
+  { title: "Gems", description: "Erstelle oder nutze spezialisierte KI-Experten mit eigenen Anweisungen (z.B. einen 'Schreib-Coach')." },
+  { title: "Gemini Live", description: "Freifließende Sprachkonversation in Echtzeit (ideal zur Vorbereitung auf mündliche Gespräche)." }
 ];
 
-const INITIAL_NOTEBOOK_CONFIG: Record<string, NotebookConfigOption> = {
-  'Audio-Zusammenfassung': {
-    formats: ["Detaillierte Analyse", "Zusammenfassung", "Kritische Bewertung", "Diskussion"],
-    lengths: ["Kurz (Elevator Pitch)", "Standard (ca. 5 Min)", "Ausführlicher Podcast"]
+const INITIAL_NOTEBOOK_CONFIG: Record<string, Record<string, string[]>> = {
+  'Audioübersichten (Podcast-ähnliche Diskussionen)': {
+    "Fokus & Thema": ["Allgemeine Zusammenfassung", "Detaillierte Analyse", "Kritische Diskussion", "Für Anfänger erklärt"],
+    "Länge": ["Kurz (Elevator Pitch)", "Standard", "Ausführlich"]
   },
-  'Videoübersicht': {
-    formats: ["Cinematic", "Erklärvideo / Didaktisch", "Business / Corporate", "Social Media Short"],
-    lengths: ["Unter 1 Minute", "1-3 Minuten", "Detailliert (5+ Min)"]
+  'Videoübersichten (visuelle Videos mit KI-Narration)': {
+    "Visueller Stil": ["Cinematic", "Erklärvideo / Didaktisch", "Business / Corporate", "Social Media Short"],
+    "Länge": ["Unter 1 Minute", "1-3 Minuten", "Detailliert (5+ Min)"]
   },
-  'Mindmap': {
-    formats: ["Kreativ / Brainstorming", "Logisch / Strukturiert", "Problem-Lösung"],
-    lengths: ["High Level (Grob)", "Standard", "Hoch Komplex (Verschachtelt)"]
+  'Präsentationen (Slide Decks)': {
+    "Art der Präsentation": ["Pitch Deck", "Lehr-Präsentation", "Status-Update", "Vision / Strategie"],
+    "Folien-Anzahl": ["Ca. 5 Folien", "Ca. 10 Folien", "Umfassend (20+ Folien)"]
   },
-  'Infografik': {
-    formats: ["Statistisch / Datengetrieben", "Prozess-Ablauf", "Vergleich / Pro-Contra"],
-    lengths: ["Kurzgefasst", "Standard", "Detailliert"]
+  'Infografiken (visuelle Zusammenfassungen)': {
+    "Sprache auswählen": ["Deutsch", "Englisch", "Spanisch", "Französisch"],
+    "Ausrichtung auswählen": ["Querformat", "Hochformat", "Quadrat"],
+    "Visuellen Stil auswählen": ["Automatische Auswahl", "Sketchnote", "Kawaii", "Professionell", "Wissenschaft", "Anime"],
+    "Detaillierungsgrad": ["Kurzgefasst", "Standard", "Detailliert (BETA)"]
   },
-  'Berichte': {
-    formats: ["Executive Summary", "Forschungsbericht", "Fallstudie", "Bullet-Point Liste"],
-    lengths: ["1 Seite", "2-3 Seiten", "Umfassend (Detailtiefe)"]
+  'Mind Maps (interaktive visuelle Karten)': {
+    "Struktur": ["Kreativ / Brainstorming", "Logisch / Hierarchisch", "Ursache-Wirkung"],
+    "Komplexität": ["High Level (Grob)", "Standard", "Hoch Komplex (Verschachtelt)"]
   },
-  'Karteikarten': {
-    formats: ["Lückentext", "Frage-Antwort", "Vokabel-Stil", "Konzept-Definition"],
-    lengths: ["10 Karten", "20 Karten", "50+ Karten"]
+  'Berichte (maßgeschneiderte Dokumente)': {
+    "Format": ["Executive Summary", "Forschungsbericht", "Fallstudie", "Thesenpapier"],
+    "Detailtiefe": ["1 Seite (Kompakt)", "2-3 Seiten", "Umfassend"]
   },
-  'Quiz': {
-    formats: ["Multiple Choice", "Offene Fragen", "True/False", "Szenario-basiert"],
-    lengths: ["5 Fragen", "10 Fragen", "20 Fragen"]
+  'Lernkarten und Quizze': {
+    "Typ": ["Lernkarten (Vokabel-Stil)", "Multiple Choice", "Offene Fragen", "True/False"],
+    "Schwierigkeitsgrad": ["Grundlagen", "Fortgeschritten", "Experte (Transferfragen)"]
   },
-  'Präsentation': {
-    formats: ["Pitch Deck", "Lehr-Präsentation", "Status-Update", "Vision / Strategie"],
-    lengths: ["Management (5 Folien)", "Standard (10 Folien)", "Deep Dive (20+ Folien)"]
+  'Datentabellen': {
+    "Tabellenart": ["Rohdaten-Extraktion", "Vergleichstabelle", "Zusammenfassung (Aggregiert)"],
+    "Umfang": ["Top 5", "Top 10", "Alle relevanten Daten"]
   },
-  'Datentabelle': {
-    formats: ["Rohdaten-Extraktion", "Vergleichstabelle", "KPI-Übersicht", "Zeitverlauf"],
-    lengths: ["Top 5", "Top 10", "Alle verfügbaren Daten"]
+  'Lernführer (personalisierter Tutor)': {
+    "Format": ["Schritt-für-Schritt-Anleitung", "Sokratischer Dialog", "FAQ-Katalog"],
+    "Zielgruppe / Niveau": ["Schüler", "Student", "Berufseinsteiger", "Profi"]
   }
 };
 
@@ -167,7 +166,6 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSave, onClose, init
 
 // --- MAIN APP COMPONENT ---
 const App: React.FC = () => {
-  // Global App State
   const [apiKey, setApiKey] = useState<string>('');
   const [isKeyModalOpen, setIsKeyModalOpen] = useState<boolean>(false);
   const [appConfig, setAppConfig] = useState<DynamicConfig>({
@@ -178,93 +176,108 @@ const App: React.FC = () => {
   });
   const [isUpdatingConfig, setIsUpdatingConfig] = useState<boolean>(false);
 
-  // User Selection State
+  // Platform & Tool Selection
   const [selectedPlatform, setSelectedPlatform] = useState<AiPlatform>(AiPlatform.GEMINI);
-  const [selectedTool, setSelectedTool] = useState<string>(INITIAL_GEMINI_TOOLS[0]);
+  const [selectedTool, setSelectedTool] = useState<string>(INITIAL_GEMINI_TOOLS[0].title);
   const [selectedMode, setSelectedMode] = useState<ModelMode>(ModelMode.FAST);
   
+  // Dynamic NotebookLM Selections
   const initialGoal = Object.keys(INITIAL_NOTEBOOK_CONFIG)[0];
   const [notebookGoal, setNotebookGoal] = useState<string>(initialGoal);
-  const [notebookFormat, setNotebookFormat] = useState<string>(INITIAL_NOTEBOOK_CONFIG[initialGoal].formats[0]);
-  const [notebookLength, setNotebookLength] = useState<string>(INITIAL_NOTEBOOK_CONFIG[initialGoal].lengths[0]);
+  const [notebookSelections, setNotebookSelections] = useState<Record<string, string>>({});
 
-  // Input & Output State
+  // I/O State
   const [userInput, setUserInput] = useState<string>('');
   const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
 
-  // Audio State
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize App
+  // Initialize
   useEffect(() => {
     const storedKey = localStorage.getItem('gemini_api_key');
     const storedConfig = localStorage.getItem('gemini_dynamic_config');
     
-    if (storedKey) {
-      setApiKey(storedKey);
-    } else {
-      setIsKeyModalOpen(true);
-    }
+    if (storedKey) setApiKey(storedKey);
+    else setIsKeyModalOpen(true);
 
     if (storedConfig) {
       try {
         const parsed = JSON.parse(storedConfig);
-        setAppConfig(parsed);
-        setSelectedTool(parsed.geminiTools[0] || INITIAL_GEMINI_TOOLS[0]);
-        const firstGoal = Object.keys(parsed.notebookGoals)[0];
-        if (firstGoal) {
-          setNotebookGoal(firstGoal);
-          setNotebookFormat(parsed.notebookGoals[firstGoal].formats?.[0] || "Standard");
-          setNotebookLength(parsed.notebookGoals[firstGoal].lengths?.[0] || "Standard");
+        
+        // Sicherheits-Check: Falls die KI beim Update versehentlich Kategorien gelöscht hat, 
+        // erzwingen wir hier den Standard zurück.
+        const parsedGoalCount = Object.keys(parsed.notebookGoals || {}).length;
+        if (parsedGoalCount < 8) {
+           console.warn("Gespeicherte Konfiguration war unvollständig. Setze auf Standard zurück.");
+           setAppConfig({
+              ...parsed,
+              notebookGoals: INITIAL_NOTEBOOK_CONFIG
+           });
+           setNotebookGoal(Object.keys(INITIAL_NOTEBOOK_CONFIG)[0]);
+        } else {
+           setAppConfig(parsed);
+           setSelectedTool(parsed.geminiTools[0]?.title || INITIAL_GEMINI_TOOLS[0].title);
+           const firstGoal = Object.keys(parsed.notebookGoals)[0];
+           if (firstGoal) setNotebookGoal(firstGoal);
         }
       } catch (e) {
-        console.error("Fehler beim Laden der Konfiguration", e);
+        console.error("Config Load Error", e);
       }
     }
   }, []);
 
-  // Update notebook options automatically when goal changes
+  // Update NotebookLM Selections when Goal changes
   useEffect(() => {
     if (selectedPlatform === AiPlatform.NOTEBOOK_LM) {
       const currentGoalConfig = appConfig.notebookGoals[notebookGoal];
       if (currentGoalConfig) {
-        setNotebookFormat(currentGoalConfig.formats?.[0] || "Standard");
-        setNotebookLength(currentGoalConfig.lengths?.[0] || "Standard");
+        const newSelections: Record<string, string> = {};
+        Object.keys(currentGoalConfig).forEach(category => {
+          newSelections[category] = currentGoalConfig[category][0] || "";
+        });
+        setNotebookSelections(newSelections);
       }
     }
   }, [notebookGoal, selectedPlatform, appConfig]);
 
-  // --- GOOGLE API SERVICES ---
+  const handleNotebookSelectionChange = (category: string, value: string) => {
+    setNotebookSelections(prev => ({ ...prev, [category]: value }));
+  };
+
+  // --- API LOGIC ---
   const fetchDynamicConfig = async (currentKey: string) => {
     if (!currentKey) return;
     setIsUpdatingConfig(true);
     try {
+      const currentNotebookCategories = Object.keys(INITIAL_NOTEBOOK_CONFIG).map(k => `"${k}"`).join(", ");
+      const currentGeminiTools = INITIAL_GEMINI_TOOLS.map(t => `"${t.title}"`).join(", ");
+      
       const prompt = `
-        Du bist der System-Updater für einen Prompt-Generator. Recherchiere AKTUELL IM INTERNET die allerneuesten, offiziellen Funktionen 
-        von Google Gemini Advanced/Pro und Google NotebookLM (inkl. neuer, experimenteller Studio-Features).
+        Du bist der System-Updater für einen Prompt-Generator. Recherchiere AKTUELL IM INTERNET die allerneuesten, offiziellen Funktionen von Google Gemini (NUR PRO Abo) und NotebookLM.
         
-        WICHTIG: Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Verwende keine Formatierungen, nur das reine JSON.
-        Gib eine strikte JSON-Antwort zurück, exakt in dieser dynamischen Struktur:
+        WICHTIGE REGELN FÜR DEINE RECHERCHE UND ANTWORT:
+        1. SCHLIESSE Ultra-Features komplett aus. Liste NUR Funktionen, die für "Google AI Pro" Abonnenten im Web-Interface verfügbar sind.
+        2. FÜR GEMINI: Du MUSST ZWINGEND exakt diese Basis-Tools beibehalten: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes, klickbares Tool im UI hinzugekommen ist. KEINE abstrakten Backend-Features wie "1 Million Tokens".
+        3. FÜR NOTEBOOKLM: Du MUSST ZWINGEND exakt diese 9 Hauptkategorien beibehalten: ${currentNotebookCategories}. Du darfst KEINE einzige davon weglassen! Recherchiere lediglich, ob es neue Unterpunkte für diese 9 Kategorien gibt (z.B. neue visuelle Stile) oder ob eine 10. Kategorie hinzugekommen ist.
+        
+        Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Verwende keine Formatierungen, nur reines JSON:
         {
-            "geminiTools": ["Aktuelles Tool 1", "Aktuelles Tool 2"],
+            "geminiTools": [
+                { "title": "Name des klickbaren Tools", "description": "Ein kurzer, prägnanter Erklärsatz dazu" }
+            ],
             "notebookGoals": {
-                "Aktuelle Studio Kategorie 1 (z.B. Audio-Zusammenfassung)": {
-                  "formats": ["Format-Option 1", "Format-Option 2"],
-                  "lengths": ["Längen-Option 1", "Längen-Option 2"]
-                },
-                "Aktuelle Studio Kategorie 2 (z.B. Videoübersicht)": {
-                  "formats": ["Format-Option 1"],
-                  "lengths": ["Längen-Option 1"]
+                "Titel der Kategorie (Muss alle 9 enthalten!)": {
+                  "Name der Einstellungskategorie (z.B. Ausrichtung)": ["Option 1", "Option 2"]
                 }
             },
-            "rules": "Ein Fließtext mit den wichtigsten, tagesaktuellen Google Prompting-Regeln."
+            "rules": "Ein Fließtext mit den tagesaktuellen Google Prompting-Regeln."
         }
       `;
 
@@ -273,7 +286,7 @@ const App: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          tools: [{ google_search: {} }] // Live-Suche bleibt aktiv, aber der inkompatible JSON-MimeType-Zwang wurde entfernt.
+          tools: [{ google_search: {} }] 
         })
       });
 
@@ -285,22 +298,33 @@ const App: React.FC = () => {
       if (responseText) {
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         const newConfig = JSON.parse(cleanText) as DynamicConfig;
+        
+        // Sicherheits-Netz NotebookLM: Wenn die KI Kategorien weggelassen hat, verschmelzen wir das Update mit dem Original.
+        const mergedGoals = { ...INITIAL_NOTEBOOK_CONFIG, ...(newConfig.notebookGoals || {}) };
+        newConfig.notebookGoals = mergedGoals;
+        
+        // Sicherheits-Netz Gemini Tools: Basis-Tools zwingend beibehalten, neue hinzufügen
+        const newTools = newConfig.geminiTools || [];
+        const mergedTools = [...INITIAL_GEMINI_TOOLS];
+        newTools.forEach(newTool => {
+          if (!mergedTools.find(t => t.title.toLowerCase() === newTool.title.toLowerCase())) {
+            mergedTools.push(newTool);
+          }
+        });
+        newConfig.geminiTools = mergedTools;
+        
         newConfig.lastUpdated = new Date().toLocaleString('de-DE');
         
         setAppConfig(newConfig);
         localStorage.setItem('gemini_dynamic_config', JSON.stringify(newConfig));
         
-        setSelectedTool(newConfig.geminiTools[0] || 'Standard');
+        setSelectedTool(newConfig.geminiTools[0]?.title || 'Standardchat');
         const firstGoal = Object.keys(newConfig.notebookGoals)[0];
-        if (firstGoal) {
-            setNotebookGoal(firstGoal);
-            setNotebookFormat(newConfig.notebookGoals[firstGoal].formats?.[0] || "Standard");
-            setNotebookLength(newConfig.notebookGoals[firstGoal].lengths?.[0] || "Standard");
-        }
+        if (firstGoal) setNotebookGoal(firstGoal);
       }
     } catch (e: any) {
-      console.error("Fehler beim dynamischen Update:", e);
-      alert(`Update fehlgeschlagen:\n${e.message || "Netzwerkfehler"}\n\nBitte prüfe deinen API Key und deine Verbindung.`);
+      console.error("Fehler beim Update:", e);
+      alert(`Update fehlgeschlagen:\n${e.message}\nBitte prüfe deinen API Key.`);
     } finally {
       setIsUpdatingConfig(false);
     }
@@ -324,12 +348,16 @@ const App: React.FC = () => {
         sysMsg = `Du bist ein professioneller Prompt Architect. Der Nutzer möchte das Tool '${selectedTool}' im Modus '${selectedMode}' nutzen. 
         WICHTIG! Wende bei der Erstellung des Prompts zwingend diese offiziellen Regeln an:
         ${appConfig.rules}
-        Erstelle aus der folgenden Nutzerbeschreibung den perfekten, hochoptimierten Prompt.
+        Erstelle aus der folgenden Nutzerbeschreibung den perfekten, hochoptimierten Prompt, zugeschnitten auf das Tool ${selectedTool}.
         Antworte AUSSCHLIESSLICH mit dem fertigen Prompt ohne Meta-Kommentare.`;
       } else {
+        const settingsString = Object.entries(notebookSelections)
+          .map(([key, val]) => `- ${key}: '${val}'`)
+          .join('\n        ');
+
         sysMsg = `Du bist ein Experte für NotebookLM. Erstelle eine perfekte Instruktion oder ein Prompt-Template für das Ziel '${notebookGoal}'.
-        Gewünschtes Format/Stil: '${notebookFormat}'
-        Gewünschte Länge/Umfang: '${notebookLength}'
+        Der Nutzer hat folgende feingranulare Einstellungen für das Studio-Tool gewählt:
+        ${settingsString}
 
         WICHTIG! Wende zwingend diese offiziellen Regeln an:
         ${appConfig.rules}
@@ -341,12 +369,7 @@ const App: React.FC = () => {
       if (selectedPlatform === AiPlatform.GEMINI && uploadedImages.length > 0) {
         for (const img of uploadedImages) {
           const base64Data = img.base64.split(',')[1];
-          parts.push({
-            inlineData: {
-              data: base64Data,
-              mimeType: img.mimeType
-            }
-          });
+          parts.push({ inlineData: { data: base64Data, mimeType: img.mimeType } });
         }
       }
 
@@ -368,7 +391,7 @@ const App: React.FC = () => {
       setGeneratedPrompt(responseText || "Es konnte kein Text generiert werden.");
     } catch (error: any) {
       console.error(error);
-      setGeneratedPrompt(`Ein Fehler ist aufgetreten: ${error.message || "Netzwerkfehler"}\nBitte API Key prüfen.`);
+      setGeneratedPrompt(`Ein Fehler ist aufgetreten: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -383,7 +406,6 @@ const App: React.FC = () => {
       reader.readAsDataURL(audioBlob);
       reader.onloadend = async () => {
         const base64Audio = (reader.result as string).split(',')[1];
-        
         const parts = [
             { text: "Erstelle ein präzises Transkript dieser Audioaufnahme in der gesprochenen Sprache. Gib nur den Text aus." },
             { inlineData: { data: base64Audio, mimeType: 'audio/webm' } }
@@ -392,21 +414,15 @@ const App: React.FC = () => {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts }]
-            })
+            body: JSON.stringify({ contents: [{ parts }] })
         });
 
         const data = await response.json();
         if (data.error) throw new Error(data.error.message);
         
         const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
         if (responseText) {
-          setUserInput(prev => {
-            const trimmedPrev = prev.trim();
-            return trimmedPrev ? `${trimmedPrev}\n[Audio]: ${responseText}` : responseText;
-          });
+          setUserInput(prev => prev.trim() ? `${prev.trim()}\n[Audio]: ${responseText}` : responseText);
         }
         setIsTranscribing(false);
       };
@@ -430,17 +446,12 @@ const App: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-
+      mediaRecorder.ondataavailable = (event) => { if (event.data.size > 0) audioChunksRef.current.push(event.data); };
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         await handleTranscription(audioBlob);
         stream.getTracks().forEach(track => track.stop());
       };
-
       mediaRecorder.start();
       mediaRecorderRef.current = mediaRecorder;
       setIsRecording(true);
@@ -473,9 +484,7 @@ const App: React.FC = () => {
     setUploadedImages(prev => [...prev, ...newImages]);
   };
 
-  const removeImage = (index: number) => {
-    setUploadedImages(prev => prev.filter((_, i) => i !== index));
-  };
+  const removeImage = (index: number) => setUploadedImages(prev => prev.filter((_, i) => i !== index));
 
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedPrompt);
@@ -487,33 +496,28 @@ const App: React.FC = () => {
     navigator.clipboard.writeText(generatedPrompt);
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 3000);
-    const url = selectedPlatform === AiPlatform.NOTEBOOK_LM 
-        ? 'https://notebooklm.google.com/' 
-        : 'https://gemini.google.com/app';
+    const url = selectedPlatform === AiPlatform.NOTEBOOK_LM ? 'https://notebooklm.google.com/' : 'https://gemini.google.com/app';
     window.open(url, '_blank');
   };
 
   // --- DYNAMIC ICON HELPERS ---
   const getDynamicIcon = (name: string) => {
     const lower = name.toLowerCase();
-    if (lower.includes('video')) return <Video size={18} />;
-    if (lower.includes('bild') || lower.includes('image')) return <ImageIcon size={18} />;
-    if (lower.includes('suche') || lower.includes('research')) return <Search size={18} />;
+    if (lower.includes('video') || lower.includes('veo')) return <Video size={18} />;
+    if (lower.includes('bild') || lower.includes('imagen')) return <ImageIcon size={18} />;
+    if (lower.includes('research') || lower.includes('suche')) return <Search size={18} />;
     if (lower.includes('canvas') || lower.includes('layout')) return <LayoutTemplate size={18} />;
-    if (lower.includes('lern') || lower.includes('study') || lower.includes('kartei')) return <Layers size={18} />;
-    if (lower.includes('audio')) return <Headphones size={18} />;
+    if (lower.includes('lern') || lower.includes('kartei') || lower.includes('tutor')) return <Layers size={18} />;
+    if (lower.includes('audio') || lower.includes('sprach') || lower.includes('live')) return <Headphones size={18} />;
     if (lower.includes('bericht') || lower.includes('dokument')) return <FileText size={18} />;
     if (lower.includes('quiz') || lower.includes('frage')) return <GraduationCap size={18} />;
-    if (lower.includes('mindmap') || lower.includes('netz')) return <Network size={18} />;
+    if (lower.includes('mindmap') || lower.includes('netz') || lower.includes('map')) return <Network size={18} />;
     if (lower.includes('tabelle') || lower.includes('daten')) return <Database size={18} />;
     if (lower.includes('präsent') || lower.includes('slide')) return <MonitorPlay size={18} />;
     if (lower.includes('code') || lower.includes('funktion')) return <Terminal size={18} />;
-    if (lower.includes('cloud') || lower.includes('konnektor')) return <Globe size={18} />;
-    if (lower.includes('sicherheit') || lower.includes('filter')) return <ShieldCheck size={18} />;
-    if (lower.includes('agent') || lower.includes('langchain')) return <Box size={18} />;
-    if (lower.includes('multi')) return <MessageSquare size={18} />;
-    if (lower.includes('kontext')) return <BookOpen size={18} />;
-    if (lower.includes('anpassung') || lower.includes('feinab')) return <Zap size={18} />;
+    if (lower.includes('workspace') || lower.includes('integration') || lower.includes('drive')) return <Globe size={18} />;
+    if (lower.includes('gems') || lower.includes('custom')) return <Box size={18} />;
+    if (lower.includes('chat')) return <MessageSquare size={18} />;
     return <Sparkles size={18} />;
   };
 
@@ -554,7 +558,7 @@ const App: React.FC = () => {
         forceOpen={!apiKey}
       />
 
-      <div className="max-w-4xl mx-auto space-y-6 pt-12 md:pt-6">
+      <div className="max-w-6xl mx-auto space-y-6 pt-12 md:pt-6">
         
         {/* Header */}
         <header className="text-center mb-6">
@@ -567,13 +571,13 @@ const App: React.FC = () => {
         </header>
 
         {/* Current Rules Viewer */}
-        <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 text-xs text-blue-800">
+        <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 text-xs text-blue-800 max-w-4xl mx-auto">
            <strong>Aktuell angewendete KI-Regeln:</strong>
            <p className="mt-1 line-clamp-2 hover:line-clamp-none transition-all cursor-default opacity-80 whitespace-pre-line">{appConfig.rules}</p>
         </div>
 
-        {/* PLATFORM SWITCHER (Mac-like Segmented Control) */}
-        <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200 flex mb-6">
+        {/* PLATFORM SWITCHER */}
+        <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200 flex mb-6 max-w-4xl mx-auto">
             <button
                 onClick={() => setSelectedPlatform(AiPlatform.GEMINI)}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
@@ -603,22 +607,29 @@ const App: React.FC = () => {
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
              1. {selectedPlatform === AiPlatform.GEMINI ? "ZIEL-TOOL" : "AUSGABE-TYP"}
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {selectedPlatform === AiPlatform.GEMINI ? (
                 appConfig.geminiTools.map((tool) => (
                     <button
-                        key={tool}
-                        onClick={() => setSelectedTool(tool)}
-                        className={`flex items-center justify-start gap-3 p-3 text-sm font-medium rounded-xl border transition-all text-left ${
-                        selectedTool === tool
-                            ? 'bg-blue-50 border-blue-200 text-blue-700 ring-1 ring-blue-100'
-                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        key={tool.title}
+                        onClick={() => setSelectedTool(tool.title)}
+                        className={`flex flex-col items-start justify-start gap-2 p-4 rounded-2xl border transition-all text-left group ${
+                        selectedTool === tool.title
+                            ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-100 shadow-sm'
+                            : 'bg-white border-gray-200 hover:border-blue-200 hover:bg-blue-50/30'
                         }`}
                     >
-                        <div className={selectedTool === tool ? 'text-blue-600' : 'text-gray-400'}>
-                            {getDynamicIcon(tool)}
+                        <div className="flex items-center gap-2">
+                           <div className={selectedTool === tool.title ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'}>
+                               {getDynamicIcon(tool.title)}
+                           </div>
+                           <span className={`font-semibold text-sm ${selectedTool === tool.title ? 'text-blue-800' : 'text-gray-700'}`}>
+                             {tool.title}
+                           </span>
                         </div>
-                        <span className="leading-snug text-xs sm:text-sm">{tool}</span>
+                        <p className={`text-xs leading-relaxed ${selectedTool === tool.title ? 'text-blue-600/80' : 'text-gray-500'}`}>
+                          {tool.description}
+                        </p>
                     </button>
                 ))
             ) : (
@@ -626,96 +637,87 @@ const App: React.FC = () => {
                     <button
                         key={goal}
                         onClick={() => setNotebookGoal(goal)}
-                        className={`flex items-center justify-start gap-3 p-3 text-sm font-medium rounded-xl border transition-all text-left ${
+                        className={`flex items-center justify-start gap-3 p-4 rounded-2xl border transition-all text-left group ${
                         notebookGoal === goal
-                            ? 'bg-green-50 border-green-200 text-green-700 ring-1 ring-green-100'
-                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                            ? 'bg-green-50 border-green-300 ring-1 ring-green-100 shadow-sm'
+                            : 'bg-white border-gray-200 hover:border-green-200 hover:bg-green-50/30'
                         }`}
                     >
-                        <div className={notebookGoal === goal ? 'text-green-600' : 'text-gray-400'}>
+                        <div className={notebookGoal === goal ? 'text-green-600' : 'text-gray-400 group-hover:text-green-500'}>
                             {getDynamicIcon(goal)}
                         </div>
-                        <span className="leading-snug text-xs sm:text-sm">{goal}</span>
+                        <span className={`font-semibold text-sm leading-snug ${notebookGoal === goal ? 'text-green-800' : 'text-gray-700'}`}>
+                          {goal}
+                        </span>
                     </button>
                 ))
             )}
           </div>
         </div>
 
-        {/* 2. SELECTION (Mode or Option) */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in duration-300">
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
-            2. {selectedPlatform === AiPlatform.GEMINI ? "MODUS" : "OPTION / FORMAT"}
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {selectedPlatform === AiPlatform.GEMINI ? (
-                Object.values(ModelMode).map((mode) => {
-                    let icon = mode === ModelMode.FAST ? <Zap size={18}/> : mode === ModelMode.THINKING ? <BrainCircuit size={18}/> : <Rocket size={18}/>;
-                    return (
-                      <button
-                      key={mode}
-                      onClick={() => setSelectedMode(mode)}
-                      className={`flex items-center justify-center sm:justify-start gap-3 p-3 rounded-xl border transition-all text-sm font-medium ${
-                          selectedMode === mode
-                          ? 'bg-indigo-50 border-indigo-200 text-indigo-700 ring-1 ring-indigo-100'
-                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                      }`}
-                      >
-                      <div className={selectedMode === mode ? 'text-indigo-600' : 'text-gray-400'}>{icon}</div>
-                      <span className="text-center sm:text-left leading-tight">{mode}</span>
-                      </button>
-                    );
-                })
-            ) : (
-                (appConfig.notebookGoals[notebookGoal]?.formats || []).map((formatOption) => (
+        {/* 2. DYNAMIC SETTINGS (Mode or Studio Options) */}
+        {selectedPlatform === AiPlatform.GEMINI ? (
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in duration-300 max-w-4xl mx-auto">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
+              2. MODUS
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {Object.values(ModelMode).map((mode) => {
+                  let icon = mode === ModelMode.FAST ? <Zap size={18}/> : mode === ModelMode.THINKING ? <BrainCircuit size={18}/> : <Rocket size={18}/>;
+                  return (
                     <button
-                        key={formatOption}
-                        onClick={() => setNotebookFormat(formatOption)}
-                        className={`flex items-center justify-start gap-3 p-3 rounded-xl border transition-all text-sm font-medium text-left ${
-                        notebookFormat === formatOption
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800 ring-1 ring-emerald-100'
-                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                        }`}
+                    key={mode}
+                    onClick={() => setSelectedMode(mode)}
+                    className={`flex items-center justify-center gap-3 p-3 rounded-xl border transition-all text-sm font-medium ${
+                        selectedMode === mode
+                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700 ring-1 ring-indigo-100'
+                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
                     >
-                        <span className="leading-snug text-xs sm:text-sm">{formatOption}</span>
+                    <div className={selectedMode === mode ? 'text-indigo-600' : 'text-gray-400'}>{icon}</div>
+                    <span className="leading-tight">{mode}</span>
                     </button>
-                ))
-            )}
-          </div>
-        </div>
-
-        {/* 3. NotebookLM LENGTH (Only visible for NotebookLM) */}
-        {selectedPlatform === AiPlatform.NOTEBOOK_LM && (
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in duration-300">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
-                3. LÄNGE / UMFANG
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {(appConfig.notebookGoals[notebookGoal]?.lengths || []).map((lengthOption) => (
-                    <button
-                        key={lengthOption}
-                        onClick={() => setNotebookLength(lengthOption)}
-                        className={`flex items-center justify-start gap-3 p-3 text-sm font-medium rounded-xl border transition-all text-left ${
-                        notebookLength === lengthOption
-                            ? 'bg-teal-50 border-teal-200 text-teal-800 ring-1 ring-teal-100'
-                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                        }`}
-                    >
-                        <span className="leading-snug text-xs sm:text-sm">{lengthOption}</span>
-                    </button>
-                ))}
-              </div>
+                  );
+              })}
             </div>
+          </div>
+        ) : (
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in duration-300">
+             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
+              2. STUDIO-EINSTELLUNGEN FÜR: <span className="text-green-600">{notebookGoal}</span>
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.entries(appConfig.notebookGoals[notebookGoal] || {}).map(([categoryName, optionsArray]) => (
+                 <div key={categoryName} className="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">{categoryName}</h3>
+                    <div className="flex flex-wrap gap-2">
+                       {optionsArray.map(option => (
+                           <button
+                             key={option}
+                             onClick={() => handleNotebookSelectionChange(categoryName, option)}
+                             className={`px-4 py-2.5 rounded-xl border transition-all text-sm font-medium text-left shadow-sm hover:shadow-md ${
+                             notebookSelections[categoryName] === option
+                                 ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                                 : 'bg-white border-gray-200 text-gray-600 hover:border-emerald-200 hover:bg-emerald-50/50'
+                             }`}
+                           >
+                             {option}
+                           </button>
+                       ))}
+                    </div>
+                 </div>
+              ))}
+            </div>
+          </div>
         )}
 
-        {/* 4. Input Area */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 relative group animate-in fade-in duration-300">
+        {/* 3. Input Area */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 relative group animate-in fade-in duration-300 max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-4">
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
-               {selectedPlatform === AiPlatform.GEMINI ? "3." : "4."} BESCHREIBUNG & KONTEXT
+               3. BESCHREIBUNG & KONTEXT
             </label>
             <div className="flex items-center gap-2">
-              
               {selectedPlatform === AiPlatform.GEMINI && (
                 <>
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleFileUpload} />
@@ -753,8 +755,8 @@ const App: React.FC = () => {
                 isRecording 
                 ? "Sprich jetzt... (Beende die Aufnahme durch Klick auf das Mikrofon)" 
                 : selectedPlatform === AiPlatform.GEMINI 
-                    ? "Was möchtest du erreichen? (z.B. 'Ein Bild von einem Cyberpunk-Auto')"
-                    : "Was möchtest du aus deinen Dokumenten extrahieren? (z.B. 'Fokussiere den Podcast auf steuerliche Änderungen')"
+                    ? "Was möchtest du erreichen? (z.B. 'Generiere ein Bild von einem Auto', oder 'Recherchiere die Geschichte Berlins')"
+                    : "Was möchtest du aus deinen Dokumenten extrahieren? (z.B. 'Fokussiere den Podcast auf steuerliche Änderungen für Beamte')"
             }
             className={`w-full h-32 p-3 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all resize-none text-base outline-none ${isRecording ? 'bg-red-50/20' : ''}`}
           />
@@ -776,28 +778,30 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* 5. Action Button */}
-        <button
-          onClick={executePromptGeneration}
-          disabled={isLoading || isRecording || isTranscribing}
-          className={`w-full py-4 px-6 rounded-2xl font-bold text-white shadow-lg shadow-blue-500/20 transform hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 ${
-            (isLoading || isRecording || isTranscribing)
-            ? 'bg-gray-400 cursor-not-allowed' 
-            : selectedPlatform === AiPlatform.GEMINI
-                ? 'bg-indigo-600 hover:bg-indigo-700'
-                : 'bg-green-600 hover:bg-green-700 shadow-green-500/20'
-          }`}
-        >
-          {isLoading ? (
-            <><Loader2 size={20} className="animate-spin" /><span>Generiere Prompt...</span></>
-          ) : (
-            <>{selectedPlatform === AiPlatform.GEMINI ? <Sparkles size={20} /> : <Bot size={20} />}<span>{selectedPlatform === AiPlatform.GEMINI ? "Prompt Erstellen" : "NotebookLM Instruktion Erstellen"}</span></>
-          )}
-        </button>
+        {/* 4. Action Button */}
+        <div className="max-w-4xl mx-auto">
+          <button
+            onClick={executePromptGeneration}
+            disabled={isLoading || isRecording || isTranscribing}
+            className={`w-full py-4 px-6 rounded-2xl font-bold text-white shadow-lg transform hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 ${
+              (isLoading || isRecording || isTranscribing)
+              ? 'bg-gray-400 cursor-not-allowed shadow-none' 
+              : selectedPlatform === AiPlatform.GEMINI
+                  ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20'
+                  : 'bg-green-600 hover:bg-green-700 shadow-green-500/20'
+            }`}
+          >
+            {isLoading ? (
+              <><Loader2 size={20} className="animate-spin" /><span>Generiere Prompt...</span></>
+            ) : (
+              <>{selectedPlatform === AiPlatform.GEMINI ? <Sparkles size={20} /> : <Bot size={20} />}<span>{selectedPlatform === AiPlatform.GEMINI ? "Prompt Erstellen" : "NotebookLM Instruktion Erstellen"}</span></>
+            )}
+          </button>
+        </div>
 
         {/* Output Section */}
         {generatedPrompt && (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6 max-w-4xl mx-auto">
             <div className="bg-gray-50 border-b border-gray-100 p-4 flex justify-between items-center">
               <h2 className="font-semibold text-gray-700 text-sm flex items-center gap-2">
                 <Sparkles className={selectedPlatform === AiPlatform.NOTEBOOK_LM ? "text-green-500" : "text-amber-500"} size={16} /> Ergebnis
