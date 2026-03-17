@@ -3,7 +3,7 @@ import {
   Mic, MicOff, Copy, Sparkles, Image as ImageIcon, X, Video, Search, BookOpen, 
   LayoutTemplate, Zap, BrainCircuit, Rocket, ExternalLink, Check, Key, Loader2,
   Headphones, FileText, Layers, GraduationCap, Network, PieChart, MonitorPlay, 
-  Table, RefreshCw, Bot
+  Table, RefreshCw, Bot, Terminal, Globe, ShieldCheck, Box, Database, MessageSquare
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -13,9 +13,9 @@ export enum AiPlatform {
 }
 
 export enum ModelMode {
-  FAST = 'Fast (Flash)',
+  FAST = 'Fast',
   THINKING = 'Thinking',
-  PRO = 'Pro (Complex)'
+  PRO = 'Pro'
 }
 
 export interface UploadedImage {
@@ -25,26 +25,71 @@ export interface UploadedImage {
   mimeType: string;
 }
 
+export interface NotebookConfigOption {
+  formats: string[];
+  lengths: string[];
+}
+
 export interface DynamicConfig {
   geminiTools: string[];
-  notebookGoals: Record<string, string[]>;
+  notebookGoals: Record<string, NotebookConfigOption>;
   rules: string;
   lastUpdated?: string;
 }
 
-// --- INITIAL DEFAULTS ---
-const INITIAL_GEMINI_TOOLS = ['Standard', 'Deep Research', 'Video-Erstellung', 'Bilderstellung', 'Canvas', 'Lernhilfe'];
+// --- INITIAL DEFAULTS (Based on User Screenshots) ---
+const INITIAL_GEMINI_TOOLS = [
+  'Funktionsaufrufe (Function Calling)',
+  'Multimodale Eingabe (Text, Bild, Audio)',
+  'Erweiterte Kontextfenster',
+  'Grounding mit Google Suche',
+  'Grounding mit Google Dokumenten',
+  'Code-Generierung, -Ausführung',
+  'Datenkonnektoren für die Cloud',
+  'Bildanalyse und Bildunterschriften',
+  'Live-Audio-Verarbeitung',
+  'Anpassung und Feinabstimmung',
+  'Sicherheits-APIs und Inhaltsfilterung',
+  'Agenten-Erstellung mit LangChain'
+];
 
-const INITIAL_NOTEBOOK_CONFIG: Record<string, string[]> = {
-  'Audio-Zusammenfassung': ["Überblick", "Deep Dive (Detail)", "Kontrovers/Diskussion", "Für Einsteiger"],
-  'Videoübersicht': ["Cinematic", "Erklärvideo / Didaktisch", "Business / Corporate", "Social Media Short"],
-  'Mindmap': ["High Level (Grob)", "Standard", "Hoch Komplex (Verschachtelt)"],
-  'Berichte': ["Executive Summary (1 Seite)", "Standard Bericht", "Detaillierte Analyse", "Bullet-Point Liste"],
-  'Karteikarten': ["Basisbegriffe", "Fortgeschritten", "Experte (Transferfragen)"],
-  'Quiz': ["Multiple Choice", "Offene Fragen", "True/False", "KPrim", "Mix"],
-  'Infografik': ["Kurzgefasst", "Standard", "Detailliert"],
-  'Präsentation': ["Management (5 Folien)", "Standard (10 Folien)", "Deep Dive (20+ Folien)"],
-  'Datentabelle': ["Nur Schlüsselkennzahlen", "Alle verfügbaren Daten", "Vergleichstabelle"]
+const INITIAL_NOTEBOOK_CONFIG: Record<string, NotebookConfigOption> = {
+  'Audio-Zusammenfassung': {
+    formats: ["Detaillierte Analyse", "Zusammenfassung", "Kritische Bewertung", "Diskussion"],
+    lengths: ["Kurz (Elevator Pitch)", "Standard (ca. 5 Min)", "Ausführlicher Podcast"]
+  },
+  'Videoübersicht': {
+    formats: ["Cinematic", "Erklärvideo / Didaktisch", "Business / Corporate", "Social Media Short"],
+    lengths: ["Unter 1 Minute", "1-3 Minuten", "Detailliert (5+ Min)"]
+  },
+  'Mindmap': {
+    formats: ["Kreativ / Brainstorming", "Logisch / Strukturiert", "Problem-Lösung"],
+    lengths: ["High Level (Grob)", "Standard", "Hoch Komplex (Verschachtelt)"]
+  },
+  'Infografik': {
+    formats: ["Statistisch / Datengetrieben", "Prozess-Ablauf", "Vergleich / Pro-Contra"],
+    lengths: ["Kurzgefasst", "Standard", "Detailliert"]
+  },
+  'Berichte': {
+    formats: ["Executive Summary", "Forschungsbericht", "Fallstudie", "Bullet-Point Liste"],
+    lengths: ["1 Seite", "2-3 Seiten", "Umfassend (Detailtiefe)"]
+  },
+  'Karteikarten': {
+    formats: ["Lückentext", "Frage-Antwort", "Vokabel-Stil", "Konzept-Definition"],
+    lengths: ["10 Karten", "20 Karten", "50+ Karten"]
+  },
+  'Quiz': {
+    formats: ["Multiple Choice", "Offene Fragen", "True/False", "Szenario-basiert"],
+    lengths: ["5 Fragen", "10 Fragen", "20 Fragen"]
+  },
+  'Präsentation': {
+    formats: ["Pitch Deck", "Lehr-Präsentation", "Status-Update", "Vision / Strategie"],
+    lengths: ["Management (5 Folien)", "Standard (10 Folien)", "Deep Dive (20+ Folien)"]
+  },
+  'Datentabelle': {
+    formats: ["Rohdaten-Extraktion", "Vergleichstabelle", "KPI-Übersicht", "Zeitverlauf"],
+    lengths: ["Top 5", "Top 10", "Alle verfügbaren Daten"]
+  }
 };
 
 const INITIAL_RULES = "1. Sei präzise und klar.\n2. Gib ausreichend Kontext.\n3. Definiere eine Rolle/Persona für die KI.";
@@ -104,7 +149,6 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSave, onClose, init
             Speichern
           </button>
         </div>
-
         <div className="pt-3 mt-1 border-t border-gray-100">
           <a
             href="https://aistudio.google.com/app/apikey"
@@ -116,7 +160,6 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onSave, onClose, init
             API Key kostenlos holen
           </a>
         </div>
-
       </div>
     </div>
   );
@@ -142,7 +185,8 @@ const App: React.FC = () => {
   
   const initialGoal = Object.keys(INITIAL_NOTEBOOK_CONFIG)[0];
   const [notebookGoal, setNotebookGoal] = useState<string>(initialGoal);
-  const [notebookOption, setNotebookOption] = useState<string>(INITIAL_NOTEBOOK_CONFIG[initialGoal][0]);
+  const [notebookFormat, setNotebookFormat] = useState<string>(INITIAL_NOTEBOOK_CONFIG[initialGoal].formats[0]);
+  const [notebookLength, setNotebookLength] = useState<string>(INITIAL_NOTEBOOK_CONFIG[initialGoal].lengths[0]);
 
   // Input & Output State
   const [userInput, setUserInput] = useState<string>('');
@@ -173,12 +217,12 @@ const App: React.FC = () => {
       try {
         const parsed = JSON.parse(storedConfig);
         setAppConfig(parsed);
-        // Sync selections with stored config
         setSelectedTool(parsed.geminiTools[0] || INITIAL_GEMINI_TOOLS[0]);
         const firstGoal = Object.keys(parsed.notebookGoals)[0];
         if (firstGoal) {
           setNotebookGoal(firstGoal);
-          setNotebookOption(parsed.notebookGoals[firstGoal][0]);
+          setNotebookFormat(parsed.notebookGoals[firstGoal].formats?.[0] || "Standard");
+          setNotebookLength(parsed.notebookGoals[firstGoal].lengths?.[0] || "Standard");
         }
       } catch (e) {
         console.error("Fehler beim Laden der Konfiguration", e);
@@ -186,41 +230,49 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Update notebook option dropdown automatically when goal changes
+  // Update notebook options automatically when goal changes
   useEffect(() => {
     if (selectedPlatform === AiPlatform.NOTEBOOK_LM) {
-      const options = appConfig.notebookGoals[notebookGoal] || ["Standard"];
-      setNotebookOption(options[0]);
+      const currentGoalConfig = appConfig.notebookGoals[notebookGoal];
+      if (currentGoalConfig) {
+        setNotebookFormat(currentGoalConfig.formats?.[0] || "Standard");
+        setNotebookLength(currentGoalConfig.lengths?.[0] || "Standard");
+      }
     }
   }, [notebookGoal, selectedPlatform, appConfig]);
 
-  // --- GOOGLE API SERVICES (NATIVE FETCH INSTEAD OF SDK) ---
-  
+  // --- GOOGLE API SERVICES ---
   const fetchDynamicConfig = async (currentKey: string) => {
     if (!currentKey) return;
     setIsUpdatingConfig(true);
     try {
       const prompt = `
-        Du bist der System-Updater für einen Prompt-Generator. Recherchiere die allerneuesten, offiziellen Funktionen 
-        von Google Gemini und Google NotebookLM (inkl. experimenteller Features) sowie die aktuellsten Google Prompting-Richtlinien.
+        Du bist der System-Updater für einen Prompt-Generator. Recherchiere AKTUELL IM INTERNET die allerneuesten, offiziellen Funktionen 
+        von Google Gemini Advanced/Pro und Google NotebookLM (inkl. neuer, experimenteller Studio-Features).
         
-        Gib eine strikte JSON-Antwort zurück, exakt in dieser Struktur:
+        Gib eine strikte JSON-Antwort zurück, exakt in dieser dynamischen Struktur:
         {
-            "geminiTools": ["String 1", "String 2"],
+            "geminiTools": ["Aktuelles Tool 1", "Aktuelles Tool 2"],
             "notebookGoals": {
-                "Kategorie 1": ["Option 1", "Option 2"],
-                "Kategorie 2": ["Option 1", "Option 2"]
+                "Aktuelle Studio Kategorie 1 (z.B. Audio-Zusammenfassung)": {
+                  "formats": ["Format-Option 1", "Format-Option 2"],
+                  "lengths": ["Längen-Option 1", "Längen-Option 2"]
+                },
+                "Aktuelle Studio Kategorie 2 (z.B. Videoübersicht)": {
+                  "formats": ["Format-Option 1"],
+                  "lengths": ["Längen-Option 1"]
+                }
             },
-            "rules": "Ein Fließtext mit den wichtigsten, aktuellsten Google Prompting-Regeln."
+            "rules": "Ein Fließtext mit den wichtigsten, tagesaktuellen Google Prompting-Regeln."
         }
       `;
 
-      // Nutzt jetzt die offizielle gemini-2.5-flash URL
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
+          tools: [{ google_search: {} }], // <-- Hier ist der Schlüssel: Live-Internetsuche aktiviert!
           generationConfig: { responseMimeType: "application/json" }
         })
       });
@@ -231,7 +283,6 @@ const App: React.FC = () => {
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (responseText) {
-        // Robuster JSON-Parser, um Markdown ```json auszufiltern
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         const newConfig = JSON.parse(cleanText) as DynamicConfig;
         newConfig.lastUpdated = new Date().toLocaleString('de-DE');
@@ -243,7 +294,8 @@ const App: React.FC = () => {
         const firstGoal = Object.keys(newConfig.notebookGoals)[0];
         if (firstGoal) {
             setNotebookGoal(firstGoal);
-            setNotebookOption(newConfig.notebookGoals[firstGoal][0]);
+            setNotebookFormat(newConfig.notebookGoals[firstGoal].formats?.[0] || "Standard");
+            setNotebookLength(newConfig.notebookGoals[firstGoal].lengths?.[0] || "Standard");
         }
       }
     } catch (e: any) {
@@ -275,7 +327,10 @@ const App: React.FC = () => {
         Erstelle aus der folgenden Nutzerbeschreibung den perfekten, hochoptimierten Prompt.
         Antworte AUSSCHLIESSLICH mit dem fertigen Prompt ohne Meta-Kommentare.`;
       } else {
-        sysMsg = `Du bist ein Experte für NotebookLM. Erstelle eine perfekte Instruktion oder ein Prompt-Template für das Ziel '${notebookGoal}' im Format/Stil '${notebookOption}'.
+        sysMsg = `Du bist ein Experte für NotebookLM. Erstelle eine perfekte Instruktion oder ein Prompt-Template für das Ziel '${notebookGoal}'.
+        Gewünschtes Format/Stil: '${notebookFormat}'
+        Gewünschte Länge/Umfang: '${notebookLength}'
+
         WICHTIG! Wende zwingend diese offiziellen Regeln an:
         ${appConfig.rules}
         Antworte AUSSCHLIESSLICH mit der fertigen Instruktion ohne Meta-Kommentare.`;
@@ -433,8 +488,8 @@ const App: React.FC = () => {
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 3000);
     const url = selectedPlatform === AiPlatform.NOTEBOOK_LM 
-        ? '[https://notebooklm.google.com/](https://notebooklm.google.com/)' 
-        : '[https://gemini.google.com/app](https://gemini.google.com/app)';
+        ? 'https://notebooklm.google.com/' 
+        : 'https://gemini.google.com/app';
     window.open(url, '_blank');
   };
 
@@ -443,16 +498,22 @@ const App: React.FC = () => {
     const lower = name.toLowerCase();
     if (lower.includes('video')) return <Video size={18} />;
     if (lower.includes('bild') || lower.includes('image')) return <ImageIcon size={18} />;
-    if (lower.includes('research') || lower.includes('suche')) return <Search size={18} />;
+    if (lower.includes('suche') || lower.includes('research')) return <Search size={18} />;
     if (lower.includes('canvas') || lower.includes('layout')) return <LayoutTemplate size={18} />;
-    if (lower.includes('lern') || lower.includes('study')) return <BookOpen size={18} />;
-    if (lower.includes('audio') || lower.includes('sound')) return <Headphones size={18} />;
-    if (lower.includes('bericht') || lower.includes('report')) return <FileText size={18} />;
-    if (lower.includes('karte') || lower.includes('flash')) return <Layers size={18} />;
-    if (lower.includes('quiz')) return <GraduationCap size={18} />;
+    if (lower.includes('lern') || lower.includes('study') || lower.includes('kartei')) return <Layers size={18} />;
+    if (lower.includes('audio')) return <Headphones size={18} />;
+    if (lower.includes('bericht') || lower.includes('dokument')) return <FileText size={18} />;
+    if (lower.includes('quiz') || lower.includes('frage')) return <GraduationCap size={18} />;
     if (lower.includes('mindmap') || lower.includes('netz')) return <Network size={18} />;
-    if (lower.includes('tabelle') || lower.includes('daten')) return <Table size={18} />;
+    if (lower.includes('tabelle') || lower.includes('daten')) return <Database size={18} />;
     if (lower.includes('präsent') || lower.includes('slide')) return <MonitorPlay size={18} />;
+    if (lower.includes('code') || lower.includes('funktion')) return <Terminal size={18} />;
+    if (lower.includes('cloud') || lower.includes('konnektor')) return <Globe size={18} />;
+    if (lower.includes('sicherheit') || lower.includes('filter')) return <ShieldCheck size={18} />;
+    if (lower.includes('agent') || lower.includes('langchain')) return <Box size={18} />;
+    if (lower.includes('multi')) return <MessageSquare size={18} />;
+    if (lower.includes('kontext')) return <BookOpen size={18} />;
+    if (lower.includes('anpassung') || lower.includes('feinab')) return <Zap size={18} />;
     return <Sparkles size={18} />;
   };
 
@@ -493,7 +554,7 @@ const App: React.FC = () => {
         forceOpen={!apiKey}
       />
 
-      <div className="max-w-2xl mx-auto space-y-6 pt-12 md:pt-6">
+      <div className="max-w-4xl mx-auto space-y-6 pt-12 md:pt-6">
         
         {/* Header */}
         <header className="text-center mb-6">
@@ -508,16 +569,16 @@ const App: React.FC = () => {
         {/* Current Rules Viewer */}
         <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 text-xs text-blue-800">
            <strong>Aktuell angewendete KI-Regeln:</strong>
-           <p className="mt-1 line-clamp-2 hover:line-clamp-none transition-all cursor-default opacity-80">{appConfig.rules}</p>
+           <p className="mt-1 line-clamp-2 hover:line-clamp-none transition-all cursor-default opacity-80 whitespace-pre-line">{appConfig.rules}</p>
         </div>
 
-        {/* PLATFORM SWITCHER */}
+        {/* PLATFORM SWITCHER (Mac-like Segmented Control) */}
         <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200 flex mb-6">
             <button
                 onClick={() => setSelectedPlatform(AiPlatform.GEMINI)}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
                     selectedPlatform === AiPlatform.GEMINI
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md'
+                    ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
             >
@@ -528,8 +589,8 @@ const App: React.FC = () => {
                 onClick={() => setSelectedPlatform(AiPlatform.NOTEBOOK_LM)}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
                     selectedPlatform === AiPlatform.NOTEBOOK_LM
-                    ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-white text-gray-900 border border-gray-200 shadow-md'
+                    : 'text-gray-500 hover:bg-gray-50'
                 }`}
             >
                 <BookOpen size={18} />
@@ -538,24 +599,26 @@ const App: React.FC = () => {
         </div>
         
         {/* 1. SELECTION (Tool or Goal) */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in duration-300">
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-             1. {selectedPlatform === AiPlatform.GEMINI ? "Ziel-Tool" : "Ausgabe-Typ"}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in duration-300">
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
+             1. {selectedPlatform === AiPlatform.GEMINI ? "ZIEL-TOOL" : "AUSGABE-TYP"}
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {selectedPlatform === AiPlatform.GEMINI ? (
                 appConfig.geminiTools.map((tool) => (
                     <button
                         key={tool}
                         onClick={() => setSelectedTool(tool)}
-                        className={`flex items-center justify-center gap-2 p-2.5 text-sm font-medium rounded-xl transition-all duration-200 border ${
+                        className={`flex items-center justify-start gap-3 p-3 text-sm font-medium rounded-xl border transition-all text-left ${
                         selectedTool === tool
                             ? 'bg-blue-50 border-blue-200 text-blue-700 ring-1 ring-blue-100'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
                     >
-                        {getDynamicIcon(tool)}
-                        <span className="truncate">{tool}</span>
+                        <div className={selectedTool === tool ? 'text-blue-600' : 'text-gray-400'}>
+                            {getDynamicIcon(tool)}
+                        </div>
+                        <span className="leading-snug text-xs sm:text-sm">{tool}</span>
                     </button>
                 ))
             ) : (
@@ -563,14 +626,16 @@ const App: React.FC = () => {
                     <button
                         key={goal}
                         onClick={() => setNotebookGoal(goal)}
-                        className={`flex items-center justify-center gap-2 p-2.5 text-sm font-medium rounded-xl transition-all duration-200 border ${
+                        className={`flex items-center justify-start gap-3 p-3 text-sm font-medium rounded-xl border transition-all text-left ${
                         notebookGoal === goal
                             ? 'bg-green-50 border-green-200 text-green-700 ring-1 ring-green-100'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
                     >
-                        {getDynamicIcon(goal)}
-                        <span className="truncate text-xs sm:text-sm">{goal}</span>
+                        <div className={notebookGoal === goal ? 'text-green-600' : 'text-gray-400'}>
+                            {getDynamicIcon(goal)}
+                        </div>
+                        <span className="leading-snug text-xs sm:text-sm">{goal}</span>
                     </button>
                 ))
             )}
@@ -578,11 +643,11 @@ const App: React.FC = () => {
         </div>
 
         {/* 2. SELECTION (Mode or Option) */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in duration-300">
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-            2. {selectedPlatform === AiPlatform.GEMINI ? "Modus" : "Option / Format"}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in duration-300">
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
+            2. {selectedPlatform === AiPlatform.GEMINI ? "MODUS" : "OPTION / FORMAT"}
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {selectedPlatform === AiPlatform.GEMINI ? (
                 Object.values(ModelMode).map((mode) => {
                     let icon = mode === ModelMode.FAST ? <Zap size={18}/> : mode === ModelMode.THINKING ? <BrainCircuit size={18}/> : <Rocket size={18}/>;
@@ -590,39 +655,65 @@ const App: React.FC = () => {
                       <button
                       key={mode}
                       onClick={() => setSelectedMode(mode)}
-                      className={`flex flex-col sm:flex-row items-center justify-center gap-2 p-3 rounded-xl border transition-all text-sm font-medium ${
+                      className={`flex items-center justify-center sm:justify-start gap-3 p-3 rounded-xl border transition-all text-sm font-medium ${
                           selectedMode === mode
                           ? 'bg-indigo-50 border-indigo-200 text-indigo-700 ring-1 ring-indigo-100'
                           : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                       }`}
                       >
                       <div className={selectedMode === mode ? 'text-indigo-600' : 'text-gray-400'}>{icon}</div>
-                      <span className="text-center sm:text-left leading-tight">{mode.replace(/\s*\(.*?\)/, '')}</span>
+                      <span className="text-center sm:text-left leading-tight">{mode}</span>
                       </button>
                     );
                 })
             ) : (
-                (appConfig.notebookGoals[notebookGoal] || []).map((option) => (
+                (appConfig.notebookGoals[notebookGoal]?.formats || []).map((formatOption) => (
                     <button
-                        key={option}
-                        onClick={() => setNotebookOption(option)}
-                        className={`flex flex-col sm:flex-row items-center justify-center gap-2 p-3 rounded-xl border transition-all text-sm font-medium ${
-                        notebookOption === option
-                            ? 'bg-teal-50 border-teal-200 text-teal-700 ring-1 ring-teal-100'
+                        key={formatOption}
+                        onClick={() => setNotebookFormat(formatOption)}
+                        className={`flex items-center justify-start gap-3 p-3 rounded-xl border transition-all text-sm font-medium text-left ${
+                        notebookFormat === formatOption
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800 ring-1 ring-emerald-100'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
                     >
-                        <span className="text-center sm:text-left leading-tight text-xs sm:text-sm">{option}</span>
+                        <span className="leading-snug text-xs sm:text-sm">{formatOption}</span>
                     </button>
                 ))
             )}
           </div>
         </div>
 
-        {/* 3. Input Area */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative group animate-in fade-in duration-300">
-          <div className="flex justify-between items-center mb-3">
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">3. Beschreibung & Kontext</label>
+        {/* 3. NotebookLM LENGTH (Only visible for NotebookLM) */}
+        {selectedPlatform === AiPlatform.NOTEBOOK_LM && (
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in duration-300">
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
+                3. LÄNGE / UMFANG
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {(appConfig.notebookGoals[notebookGoal]?.lengths || []).map((lengthOption) => (
+                    <button
+                        key={lengthOption}
+                        onClick={() => setNotebookLength(lengthOption)}
+                        className={`flex items-center justify-start gap-3 p-3 text-sm font-medium rounded-xl border transition-all text-left ${
+                        notebookLength === lengthOption
+                            ? 'bg-teal-50 border-teal-200 text-teal-800 ring-1 ring-teal-100'
+                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                    >
+                        <span className="leading-snug text-xs sm:text-sm">{lengthOption}</span>
+                    </button>
+                ))}
+              </div>
+            </div>
+        )}
+
+        {/* 4. Input Area */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 relative group animate-in fade-in duration-300">
+          <div className="flex justify-between items-center mb-4">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+               {selectedPlatform === AiPlatform.GEMINI ? "3." : "4."} BESCHREIBUNG & KONTEXT
+            </label>
             <div className="flex items-center gap-2">
               
               {selectedPlatform === AiPlatform.GEMINI && (
@@ -662,8 +753,8 @@ const App: React.FC = () => {
                 isRecording 
                 ? "Sprich jetzt... (Beende die Aufnahme durch Klick auf das Mikrofon)" 
                 : selectedPlatform === AiPlatform.GEMINI 
-                    ? "Was möchtest du erreichen? (z.B. 'Ein Video von einer Katze im Cyberpunk-Stil')"
-                    : "Was möchtest du aus deinen Dokumenten extrahieren? (z.B. 'Erstelle ein Prüfungs-Quiz')"
+                    ? "Was möchtest du erreichen? (z.B. 'Ein Bild von einem Cyberpunk-Auto')"
+                    : "Was möchtest du aus deinen Dokumenten extrahieren? (z.B. 'Fokussiere den Podcast auf steuerliche Änderungen')"
             }
             className={`w-full h-32 p-3 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all resize-none text-base outline-none ${isRecording ? 'bg-red-50/20' : ''}`}
           />
@@ -685,16 +776,16 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* 4. Action Button */}
+        {/* 5. Action Button */}
         <button
           onClick={executePromptGeneration}
           disabled={isLoading || isRecording || isTranscribing}
-          className={`w-full py-3.5 px-6 rounded-xl font-bold text-white shadow-lg shadow-blue-500/20 transform hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 ${
+          className={`w-full py-4 px-6 rounded-2xl font-bold text-white shadow-lg shadow-blue-500/20 transform hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 ${
             (isLoading || isRecording || isTranscribing)
             ? 'bg-gray-400 cursor-not-allowed' 
             : selectedPlatform === AiPlatform.GEMINI
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
-                : 'bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700'
+                ? 'bg-indigo-600 hover:bg-indigo-700'
+                : 'bg-green-600 hover:bg-green-700 shadow-green-500/20'
           }`}
         >
           {isLoading ? (
@@ -704,10 +795,10 @@ const App: React.FC = () => {
           )}
         </button>
 
-        {/* 5. Output Section */}
+        {/* Output Section */}
         {generatedPrompt && (
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6">
-            <div className="bg-gray-50 border-b border-gray-100 p-3 flex justify-between items-center">
+            <div className="bg-gray-50 border-b border-gray-100 p-4 flex justify-between items-center">
               <h2 className="font-semibold text-gray-700 text-sm flex items-center gap-2">
                 <Sparkles className={selectedPlatform === AiPlatform.NOTEBOOK_LM ? "text-green-500" : "text-amber-500"} size={16} /> Ergebnis
               </h2>
@@ -718,25 +809,25 @@ const App: React.FC = () => {
               )}
             </div>
             
-            <div className="p-4 bg-gray-50/50">
-              <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm text-gray-700 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-5 bg-gray-50/50">
+              <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-gray-700 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 {generatedPrompt}
               </pre>
             </div>
 
-            <div className="bg-gray-50 p-3 border-t border-gray-100 flex gap-3">
+            <div className="bg-gray-50 p-4 border-t border-gray-100 flex gap-3">
               <button
                 onClick={handleCopy}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm active:scale-[0.98]"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm active:scale-[0.98]"
               >
-                <Copy size={16} /> Copy All
+                <Copy size={16} /> Text Kopieren
               </button>
               <button
                 onClick={handleOpenAiTool}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all text-white shadow-md active:scale-[0.98] ${
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-white shadow-md active:scale-[0.98] ${
                     selectedPlatform === AiPlatform.GEMINI
-                    ? 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700'
-                    : 'bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700'
+                    ? 'bg-indigo-600 hover:bg-indigo-700'
+                    : 'bg-green-600 hover:bg-green-700'
                 }`}
               >
                 <ExternalLink size={16} /> In {selectedPlatform === AiPlatform.GEMINI ? "Gemini" : "NotebookLM"} öffnen
