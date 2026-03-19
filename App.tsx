@@ -4,7 +4,7 @@ import {
   LayoutTemplate, Zap, BrainCircuit, Rocket, ExternalLink, Check, Key, Loader2,
   Headphones, FileText, Layers, GraduationCap, Network, PieChart, MonitorPlay, 
   Table, RefreshCw, Bot, Terminal, Globe, ShieldCheck, Box, Database, MessageSquare,
-  Cpu, LayoutDashboard, History, Music
+  Cpu, LayoutDashboard, History, Music, Type
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -177,6 +177,7 @@ const App: React.FC = () => {
   const initialGoal = Object.keys(INITIAL_NOTEBOOK_CONFIG)[0];
   const [notebookGoal, setNotebookGoal] = useState<string>(initialGoal);
   const [notebookSelections, setNotebookSelections] = useState<Record<string, string>>({});
+  const [notebookCharLimit, setNotebookCharLimit] = useState<string>("Keine Begrenzung");
 
   // I/O State
   const [userInput, setUserInput] = useState<string>('');
@@ -359,7 +360,7 @@ const App: React.FC = () => {
         if (newConfig.geminiTools && Array.isArray(newConfig.geminiTools)) {
             newConfig.geminiTools.forEach((t: GeminiTool) => {
                if (!mergedGeminiTools.find(bt => bt.title.toLowerCase() === t.title.toLowerCase())) {
-                   mergedGeminiTools.push(t); // Neues Gemini-Tool anhängen
+                   mergedGeminiTools.push(t); // Nur anhängen, wenn es ein komplett neues Tool ist
                }
             });
         }
@@ -411,8 +412,12 @@ const App: React.FC = () => {
           .map(([key, val]) => `- ${key}: '${val}'`)
           .join('\n        ');
 
+        const limitInstruction = notebookCharLimit !== "Keine Begrenzung" 
+          ? `\n\nACHTUNG ZUR ZEICHENANZAHL: Der von dir generierte Prompt DARF MAXIMAL ${notebookCharLimit} ZEICHEN lang sein! Fasse dich entsprechend kurz und präzise, da das Eingabefeld in NotebookLM für dieses Tool begrenzt ist.`
+          : '';
+
         sysMsg = `Du bist ein Experte für NotebookLM. Erstelle eine perfekte Instruktion oder ein Prompt-Template für das Ziel '${notebookGoal}'.
-        ${settingsString ? `Der Nutzer hat folgende Einstellungen für das Studio-Tool gewählt:\n        ${settingsString}` : ''}
+        ${settingsString ? `Der Nutzer hat folgende Einstellungen für das Studio-Tool gewählt:\n        ${settingsString}` : ''}${limitInstruction}
 
         WICHTIG! Wende zwingend diese offiziellen Regeln an:
         ${appConfig.rules}
@@ -743,13 +748,13 @@ const App: React.FC = () => {
              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
               2. STUDIO-EINSTELLUNGEN FÜR: <span className="text-green-600">{notebookGoal}</span>
             </label>
-            {Object.keys(currentNotebookOptions).length === 0 ? (
-                <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
-                    Für dieses Tool sind in NotebookLM keine weiteren Voreinstellungen erforderlich.
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Object.entries(currentNotebookOptions).map(([categoryName, optionsArray]) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.keys(currentNotebookOptions).length === 0 ? (
+                  <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-xl border border-gray-100 text-center md:col-span-2 lg:col-span-3">
+                      Für dieses Tool sind in NotebookLM keine weiteren Voreinstellungen erforderlich.
+                  </div>
+              ) : (
+                  Object.entries(currentNotebookOptions).map(([categoryName, optionsArray]) => (
                      <div key={categoryName} className="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
                         <h3 className="text-sm font-semibold text-gray-700 mb-3">{categoryName}</h3>
                         <div className="flex flex-wrap gap-2">
@@ -768,9 +773,36 @@ const App: React.FC = () => {
                            ))}
                         </div>
                      </div>
-                  ))}
-                </div>
-            )}
+                  ))
+              )}
+              
+              {/* NEU: Zeichenlimit Dropdown für NotebookLM */}
+              <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 md:col-span-2 lg:col-span-3 mt-2">
+                 <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                   <Type size={16} className="text-gray-500" /> Maximale Zeichenanzahl (Prompt-Länge)
+                 </h3>
+                 <select
+                   value={notebookCharLimit}
+                   onChange={(e) => setNotebookCharLimit(e.target.value)}
+                   className="w-full sm:w-64 p-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none transition-all shadow-sm"
+                 >
+                   <option value="Keine Begrenzung">Keine Begrenzung</option>
+                   <option value="500">Max. 500 Zeichen</option>
+                   <option value="1000">Max. 1000 Zeichen</option>
+                   <option value="1500">Max. 1500 Zeichen</option>
+                   <option value="2000">Max. 2000 Zeichen</option>
+                   <option value="2500">Max. 2500 Zeichen</option>
+                   <option value="3000">Max. 3000 Zeichen</option>
+                   <option value="3500">Max. 3500 Zeichen</option>
+                   <option value="4000">Max. 4000 Zeichen</option>
+                   <option value="4500">Max. 4500 Zeichen</option>
+                   <option value="5000">Max. 5000 Zeichen</option>
+                 </select>
+                 <p className="text-xs text-gray-500 mt-2">
+                   NotebookLM begrenzt teilweise die Länge der Eingabefelder im Studio. Hier kannst du den generierten Prompt sicherheitshalber automatisch kürzen lassen.
+                 </p>
+              </div>
+            </div>
           </div>
         )}
 
