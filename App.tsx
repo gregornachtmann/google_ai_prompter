@@ -40,6 +40,7 @@ export interface DynamicConfig {
 
 // --- INITIAL DEFAULTS (Strictly based on User Input for Google AI Pro) ---
 const INITIAL_GEMINI_TOOLS: GeminiTool[] = [
+  { title: "Standard", description: "Der normale, freie Chat mit Gemini ohne speziellen Werkzeug-Fokus." },
   { title: "Bild erstellen", description: "Erstelle hochauflösende Bilder mit dem neuesten Google Nano Banana 2 Modell." },
   { title: "Canvas", description: "Ein geteilter Arbeitsbereich zum gemeinsamen Schreiben, Überarbeiten und Formatieren von langen Texten oder Code." },
   { title: "Deep Research", description: "Tiefgehende Internetrecherche, die mehrere Quellen kombiniert und umfassende Berichte erstellt." },
@@ -283,7 +284,7 @@ const App: React.FC = () => {
         Du bist der System-Updater für einen Prompt-Generator. Recherchiere AKTUELL IM INTERNET die allerneuesten, offiziellen Funktionen von Google Gemini (NUR PRO Abo) und NotebookLM.
         
         STRENGE REGELN FÜR DEINE RECHERCHE:
-        1. OFFIZIELLE QUELLEN: Nutze für deine Recherche AUSSCHLIESSLICH offizielle Google-Websites (z.B. blog.google, ai.google.com, deepmind.google, workspace.google.com, support.google.com).
+        1. OFFIZIELLE QUELLEN: Nutze für deine Recherche AUSSCHLIESSLICH offizielle Google-Websites (z.B. blog.google, ai.google.com, deepmind.google, workspace.google.com, support.google.com). Gerüchte von Drittanbietern sind verboten!
         2. SCHLIESSE Ultra-Features komplett aus. Liste NUR Funktionen, die für "Google AI Pro" Abonnenten verfügbar sind.
         3. STRIKTE TRENNUNG: Mische niemals Gemini-Tools mit NotebookLM-Tools! (z.B. gehört "Deep Research" AUSSCHLIESSLICH zu Gemini LLM).
         4. FÜR GEMINI: Behalte exakt diese Basis-Tools bei: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes Tool hinzugekommen ist. FALLS NICHT, übernimm einfach die Basis-Tools ins JSON.
@@ -291,6 +292,7 @@ const App: React.FC = () => {
            - Behalte zwingend diese Hauptkategorien bei: ${currentNotebookCategories}.
            - Ordne Anpassungsoptionen (z.B. Format, Länge, Ausrichtung) AUSSCHLIESSLICH den Tools zu, die diese Optionen auch wirklich bieten!
            - Wenn ein Tool keine Anpassungsoptionen hat, erfinde keine.
+           - Füge eine komplett neue Kategorie NUR hinzu, wenn sie ausdrücklich als neues "NotebookLM Studio" Tool deklariert ist.
         6. FÜR DIE REGELN ("rules"): Das ist extrem wichtig! Schreibe hier KEINE kurze Beschreibung. Schreibe einen UMFANGREICHEN, PROFESSIONELLEN SYSTEM-PROMPT (mindestens 5-8 detaillierte Anweisungspunkte). Dieser Text fungiert als Master-Instruktion für eine andere KI, um aus Nutzer-Stichworten perfekte Prompts zu generieren. Er muss strikte Handlungsanweisungen enthalten (z.B. "1. Definiere zwingend eine Persona...", "2. Strukturiere die Ausgabe...", "3. Erzwinge ein klares Format..."). Nutze Zeilenumbrüche (\\n).
         
         WICHTIGE REGEL FÜR DEINE AUSGABE:
@@ -434,10 +436,15 @@ const App: React.FC = () => {
       let sysMsg = "";
 
       if (selectedPlatform === AiPlatform.GEMINI) {
-        sysMsg = `Du bist ein professioneller Prompt Architect. Der Nutzer möchte das Tool '${selectedTool}' im Modus '${selectedMode}' nutzen. 
+        // KORREKTUR: Dynamischer Kontext, damit die KI weiß, was "Standard" bedeutet
+        const toolContext = selectedTool === "Standard" 
+          ? `den normalen Standard-Chat (ohne speziellen Werkzeug-Fokus)` 
+          : `das Tool '${selectedTool}'`;
+
+        sysMsg = `Du bist ein professioneller Prompt Architect. Der Nutzer möchte ${toolContext} im Modus '${selectedMode}' nutzen. 
         WICHTIG! Wende bei der Erstellung des Prompts zwingend diese offiziellen Regeln an:
         ${appConfig.rules}
-        Erstelle aus der folgenden Nutzerbeschreibung den perfekten, hochoptimierten Prompt, zugeschnitten auf das Tool ${selectedTool}.
+        Erstelle aus der folgenden Nutzerbeschreibung den perfekten, hochoptimierten Prompt, zugeschnitten auf ${toolContext}.
         Antworte AUSSCHLIESSLICH mit dem fertigen Prompt ohne Meta-Kommentare.`;
       } else {
         const settingsString = Object.entries(notebookSelections)
@@ -596,6 +603,8 @@ const App: React.FC = () => {
   // --- DYNAMIC ICON HELPERS ---
   const getDynamicIcon = (name: string) => {
     const lower = name.toLowerCase();
+    // KORREKTUR: Neues Icon für Standard eingefügt
+    if (lower.includes('standard') || lower.includes('chat')) return <MessageSquare size={18} />;
     if (lower.includes('video')) return <Video size={18} />;
     if (lower.includes('bild') || lower.includes('imagen')) return <ImageIcon size={18} />;
     if (lower.includes('research') || lower.includes('suche')) return <Search size={18} />;
