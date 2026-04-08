@@ -282,74 +282,101 @@ const App: React.FC = () => {
       const prompt = `
         Du bist der System-Updater für einen Prompt-Generator. Recherchiere AKTUELL IM INTERNET die allerneuesten, offiziellen Funktionen von Google Gemini (NUR PRO Abo) und NotebookLM.
         
-        STRENGE REGELN FÜR DEINE RECHERCHE UND ANTWORT:
-        1. SCHLIESSE Ultra-Features komplett aus. Liste NUR Funktionen, die für "Google AI Pro" Abonnenten verfügbar sind.
-        2. STRIKTE TRENNUNG: Mische niemals Gemini-Tools mit NotebookLM-Tools! (z.B. gehört "Deep Research" AUSSCHLIESSLICH zu Gemini LLM).
-        3. FÜR GEMINI: Behalte exakt diese Basis-Tools bei: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes Tool hinzugekommen ist.
-        4. FÜR NOTEBOOKLM: 
+        STRENGE REGELN FÜR DEINE RECHERCHE:
+        1. OFFIZIELLE QUELLEN: Nutze für deine Recherche AUSSCHLIESSLICH offizielle Google-Websites (z.B. blog.google, ai.google.com, deepmind.google, workspace.google.com, support.google.com).
+        2. SCHLIESSE Ultra-Features komplett aus. Liste NUR Funktionen, die für "Google AI Pro" Abonnenten verfügbar sind.
+        3. STRIKTE TRENNUNG: Mische niemals Gemini-Tools mit NotebookLM-Tools! (z.B. gehört "Deep Research" AUSSCHLIESSLICH zu Gemini LLM).
+        4. FÜR GEMINI: Behalte exakt diese Basis-Tools bei: ${currentGeminiTools}. Recherchiere lediglich, ob ein NEUES, echtes Tool hinzugekommen ist. FALLS NICHT, übernimm einfach die Basis-Tools ins JSON.
+        5. FÜR NOTEBOOKLM: 
            - Behalte zwingend diese Hauptkategorien bei: ${currentNotebookCategories}.
            - Ordne Anpassungsoptionen (z.B. Format, Länge, Ausrichtung) AUSSCHLIESSLICH den Tools zu, die diese Optionen auch wirklich bieten!
-           - Wenn ein Tool keine Anpassungsoptionen hat (wie die Mindmap), erfinde keine und lass das Optionen-Objekt leer.
-           - Füge eine komplett neue Kategorie NUR hinzu, wenn sie ausdrücklich als neues "NotebookLM Studio" Tool deklariert ist.
+           - Wenn ein Tool keine Anpassungsoptionen hat, erfinde keine.
+        6. FÜR DIE REGELN ("rules"): Das ist extrem wichtig! Schreibe hier KEINE kurze Beschreibung. Schreibe einen UMFANGREICHEN, PROFESSIONELLEN SYSTEM-PROMPT (mindestens 5-8 detaillierte Anweisungspunkte). Dieser Text fungiert als Master-Instruktion für eine andere KI, um aus Nutzer-Stichworten perfekte Prompts zu generieren. Er muss strikte Handlungsanweisungen enthalten (z.B. "1. Definiere zwingend eine Persona...", "2. Strukturiere die Ausgabe...", "3. Erzwinge ein klares Format..."). Nutze Zeilenumbrüche (\\n).
         
-        Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Verwende keine Markdown-Formatierungen.
+        WICHTIGE REGEL FÜR DEINE AUSGABE:
+        Du MUSST deine Antwort in ZWEI Teile gliedern, andernfalls stürzt das System ab!
+        
+        TEIL 1: QUELLEN & ZUSAMMENFASSUNG
+        Schreibe hier 2-3 Sätze über deine Recherche-Ergebnisse. Setze hier zwingend deine Quellenangaben (z.B. [1]). 
+        
+        TEIL 2: JSON KONFIGURATION
+        Direkt im Anschluss MUSST du zwingend die gesamte Konfiguration als validen JSON-Block ausgeben (eingefasst in \`\`\`json und \`\`\`). LASS DIESEN TEIL NIEMALS WEG!
+        
+        Hier ist die Struktur für den JSON-Block:
+        \`\`\`json
         {
             "geminiTools": [
-                { "title": "Name des klickbaren Tools", "description": "Ein kurzer, prägnanter Erklärsatz dazu" }
+                { "title": "Name des Tools", "description": "Kurzer Erklärsatz" }
             ],
             "notebookGoals": {
-                "Titel der Kategorie (z.B. Audio-Zusammenfassung)": {
-                  "Name der Einstellungskategorie (z.B. Format)": ["Option 1", "Option 2"]
-                },
-                "Titel eines Tools ohne Optionen (z.B. Mindmap)": {}
+                "Kategorie": {
+                  "Einstellung": ["Option 1", "Option 2"]
+                }
             },
-            "rules": "Ein Fließtext mit den tagesaktuellen Google Prompting-Regeln."
+            "rules": "Dein extrem ausführlicher System-Prompt (mit \\n für Absätze) für die Generierung perfekter Prompts."
         }
+        \`\`\`
       `;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${currentKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          tools: [{ googleSearch: {} }],
-          generationConfig: {
-            responseMimeType: "application/json"
-          }
+          tools: [{ googleSearch: {} }] 
         })
       });
 
       const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
       
-      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      // Fehler-Behandlung der Google API
+      if (data.error) throw new Error(data.error.message);
+      if (!data.candidates || data.candidates.length === 0) {
+        throw new Error("Die KI hat keine Kandidaten generiert. Möglicherweise ein Verbindungsproblem.");
+      }
+
+      const candidate = data.candidates[0];
+      
+      // Falls Google die Antwort wegen Sicherheits-Filtern blockiert
+      if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+        throw new Error(`Die Antwort wurde durch Google blockiert. Grund: ${candidate.finishReason}`);
+      }
+      
+      let responseText = "";
+      if (candidate.content?.parts) {
+          responseText = candidate.content.parts.map((p: any) => p.text || "").join("");
+      }
 
       if (responseText) {
-        const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        console.log("Roh-Antwort der KI:", responseText); // Hilft bei der Fehlersuche im Browser
+        
+        // --- Robuster JSON-Extraktor ---
+        const startIndex = responseText.indexOf('{');
+        const endIndex = responseText.lastIndexOf('}');
+        
+        if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+            throw new Error("Die KI hat geantwortet, aber leider keinen JSON-Code-Block generiert.");
+        }
+        
+        const cleanText = responseText.substring(startIndex, endIndex + 1);
         const newConfig = JSON.parse(cleanText) as DynamicConfig;
         
         // --- DAS INTELLIGENTE SCHUTZGITTER (Smart Merge Logic) ---
-        // Wir starten IMMER mit einer frischen Kopie der Basis-Konfiguration, um nichts zu verlieren.
         const mergedNotebookGoals = JSON.parse(JSON.stringify(INITIAL_NOTEBOOK_CONFIG));
         
         if (newConfig.notebookGoals) {
            Object.keys(newConfig.notebookGoals).forEach(goalKey => {
-             // Letzter Check: Gemini-Tools rigoros aus NotebookLM heraushalten
              if (goalKey.toLowerCase().includes("deep research")) return; 
 
              if (!mergedNotebookGoals[goalKey]) {
-                 // Ein komplett neues Studio Tool wurde gefunden!
                  mergedNotebookGoals[goalKey] = newConfig.notebookGoals[goalKey];
              } else {
-                 // Das Tool existiert bereits: Wir fügen nur NEUE Optionen hinzu, überschreiben aber niemals die Basis!
                  const newOptions = newConfig.notebookGoals[goalKey];
                  if (newOptions && typeof newOptions === 'object') {
                      Object.keys(newOptions).forEach(optionCategory => {
                          if (!mergedNotebookGoals[goalKey][optionCategory]) {
-                             // Eine neue Einstellungskategorie (z.B. "Farbe") wurde gefunden
                              mergedNotebookGoals[goalKey][optionCategory] = newOptions[optionCategory];
                          } else if (Array.isArray(newOptions[optionCategory])) {
-                             // Die Kategorie existiert, wir führen die Arrays zusammen und entfernen Duplikate
                              const combined = [...mergedNotebookGoals[goalKey][optionCategory], ...newOptions[optionCategory]];
                              mergedNotebookGoals[goalKey][optionCategory] = Array.from(new Set(combined));
                          }
@@ -363,7 +390,7 @@ const App: React.FC = () => {
         if (newConfig.geminiTools && Array.isArray(newConfig.geminiTools)) {
             newConfig.geminiTools.forEach((t: GeminiTool) => {
                if (!mergedGeminiTools.find(bt => bt.title.toLowerCase() === t.title.toLowerCase())) {
-                   mergedGeminiTools.push(t); // Nur anhängen, wenn es ein komplett neues Tool ist
+                   mergedGeminiTools.push(t); 
                }
             });
         }
@@ -381,10 +408,12 @@ const App: React.FC = () => {
         setSelectedTool(finalConfig.geminiTools[0]?.title || INITIAL_GEMINI_TOOLS[0].title);
         const firstGoal = Object.keys(finalConfig.notebookGoals)[0];
         if (firstGoal) setNotebookGoal(firstGoal);
+      } else {
+        throw new Error("Die KI hat eine komplett leere Antwort zurückgegeben (Search-Grounding-Konflikt).");
       }
     } catch (e: any) {
       console.error("Fehler beim Update:", e);
-      alert(`Update fehlgeschlagen:\n${e.message}\nBitte prüfe deinen API Key.`);
+      alert(`Update fehlgeschlagen:\n${e.message}\nBitte prüfe deinen API Key oder versuche es später noch einmal.`);
     } finally {
       setIsUpdatingConfig(false);
     }
